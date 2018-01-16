@@ -1,0 +1,21 @@
+{
+  "name": "wolf",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "start": "npm test && node ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "binance-api-node": "^0.5.0",
+    "dotenv": "^4.0.0",
+    "node-binance-api": "^0.3.6",
+    "twilio": "^3.11.0"
+  },
+  "devDependencies": {
+    "mocha": "^4.1.0"
+  }
+}
