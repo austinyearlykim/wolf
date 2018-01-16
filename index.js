@@ -27,7 +27,6 @@ function setupWebSocket() {
         const temp = {};
         temp.optimalBuyPrice = (Number(depth.bids[0].price) + 0.00000100).toFixed(8);
         temp.optimalAskPrice = (Number(depth.asks[0].price) - 0.00000100).toFixed(8);
-        temp.difference = (temp.optimalAskPrice - temp.optimalBuyPrice).toFixed(8);
         master = temp;
     });
 }
@@ -35,7 +34,7 @@ function setupWebSocket() {
 function calculateQuantityBasedOnBudget(price) {
     let quantity = 0;
     while (quantity * price <= netBudget) {
-        quantity += .0001;
+        quantity += .001;
     };
     return quantity.toFixed(3);
 }
@@ -72,11 +71,16 @@ async function confirmPurchase() {
 
 function fud() {
     fudding = true;
-    const confirmedPrice = confirmedPurchase.price;
-    const currentPrice = master.optimalAskPrice;
-    const profitGoalReached = (currentPrice >= confirmedPrice + (confirmedPrice * PERCENTAGE));
-    if (profitGoalReached) return sell(currentPrice);
-    fud();
+    let fudInterval;
+    fudInterval = setInterval(() => {
+        const confirmedPrice = confirmedPurchase.price;
+        const currentPrice = master.optimalAskPrice;
+        const profitGoalReached = (currentPrice >= confirmedPrice + (confirmedPrice * PERCENTAGE));
+        if (profitGoalReached) {
+            clearInterval(fudInterval);
+            return sell(currentPrice);
+        }
+    }, 100);
 }
 
 async function sell(cp) {
@@ -100,6 +104,7 @@ async function confirmSell() {
             check.price = Number(check.price).toFixed(8);
             confirmedSell = check;
             const message = '[SOLD]:::: ' + check.price + ' :::: PROFIT = ' + (Number(check.price) - Number(confirmedPurchase.price)).toFixed(8);
+            console.log(message);
             await twilio.sendText(message);
         };
         confirmSell();
