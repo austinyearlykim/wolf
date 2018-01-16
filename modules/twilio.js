@@ -1,5 +1,7 @@
 const Twilio = require('twilio');
-const twilio = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+if (process.env.TWILIO_ENABLED === 'true' || process.env.TWILIO_ENABLED === 'TRUE') {
+    const twilio = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+}
 module.exports = T = {};
 
 T.sendText = function(message) {
