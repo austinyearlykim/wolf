@@ -28,6 +28,7 @@ function setupWebSocket() {
         temp.optimalBuyPrice = (Number(depth.bids[0].price) + 0.00000100).toFixed(8);
         temp.optimalAskPrice = (Number(depth.asks[0].price) - 0.00000100).toFixed(8);
         master = temp;
+        hodl();
     });
 }
 
@@ -98,8 +99,8 @@ async function confirmSell() {
     try {
         if (confirmedSell) return reset();
         confirmingSell = true;
-        const check = await binance.getOrder({ symbol: TRADING_PAIR, orderId: unconfirmedSell.orderId });
-        if (check.status === 'FILLED') {
+        const check = unconfirmedSell && await binance.getOrder({ symbol: TRADING_PAIR, orderId: unconfirmedSell.orderId });
+        if (check && check.status === 'FILLED') {
             confirmingSell = false;
             check.price = Number(check.price).toFixed(8);
             confirmedSell = check;
@@ -122,9 +123,17 @@ function reset() {
     unconfirmedSell = null;
     confirmingSell = false;
     confirmedSell = null;
+    console.log('[RESET]:::: ');
+
 }
 
+let hodlLogCount = 0;
 function log() {
+    hodlLogCount++
+    if (hodlLogCount === 30) {
+        hodlLogCount = 0;
+        return reset();
+    }
     const confirmedPrice = Number(confirmedPurchase.price);
     const profitMargin = Number(confirmedPrice * PERCENTAGE).toFixed(8);
     const obp = Number(master.optimalBuyPrice)
@@ -137,7 +146,7 @@ function log() {
     );
 }
 
-async function hodl() {
+function hodl() {
     if (!master || !webSocket) return setupWebSocket();
     if (master && !unconfirmedPurchase) purchase();
     if (unconfirmedPurchase && !confirmingPurchase && !confirmedPurchase) confirmPurchase();
@@ -146,4 +155,4 @@ async function hodl() {
     if (master.optimalAskPrice && confirmedPurchase) log();
 }
 
-const interval = setInterval(hodl, 3000);
+hodl();
