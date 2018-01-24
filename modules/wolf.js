@@ -1,7 +1,10 @@
 const binance = require('./binance.js');
+const assert = require('assert');
 
 module.exports = class Wolf {
-    constructor() {
+    constructor(config) {
+        this.config = config;
+        this.symbol = null;
         this.ticker = null;  //binance websocket responsible for updating bid/ask prices per second
         this.tick = null;  //up to date bid/ask prices {bid: 0.12345678, ask: 0.12345678}
         this.transaction = {  //wolf can only do one "complete" transaction at a time. BUY and SELL OR SELL and BUY;  this.transaction will get reset after every successful transaction
@@ -11,41 +14,69 @@ module.exports = class Wolf {
             soldPrice: null
         };
         this.executing = false;
+        this.consuming = false;
+        this.queue = [];
         this.init();
     }
 
     //initiate ticker
-    init() {
-        this.ticker = binance.ws.partialDepth({ symbol: process.env.TRADING_PAIR, level: 5 }, (depth) => {
+    async init() {
+        //get trading pair information
+        const exchangeInfo = await binance.exchangeInfo();
+        exchangeInfo.symbols.forEach((symbol) => {
+            if (symbol.symbol === this.config.tradingPair) console.log(symbol); return this.symbol = symbol;
+        });
+        //setup/start ticker
+        this.ticker = binance.ws.partialDepth({ symbol: this.config.tradingPair, level: 5 }, (depth) => {
             const temp = {};
-            temp.bid = (Number(depth.bids[0].price) + 0.00000100).toFixed(8);
-            temp.ask = (Number(depth.asks[0].price) - 0.00000100).toFixed(8);
+            temp.bid = Number(depth.bids[0].price);
+            temp.ask = Number(depth.asks[0].price);
             this.tick = temp;
             !this.executing && this.execute();
+            !this.consuming && this.consume();
         });
     }
 
     //execute W.O.L.F
     execute() {
-        this.executing = true;
-        const interval = setInterval(() => {
-            if (false) {
-                clearInterval(interval);
-            }
-            this.logger('Current optimal bid/ask spread: ', this.tick);
-        }, 100);
+        this.logger('executing.', '');
+        // this.executing = true;
+        // const interval = setInterval(() => {
+        //     if (false) {
+        //         clearInterval(interval);
+        //     }
+        //     this.logger('Current optimal bid/ask spread: ', this.tick);
+        // }, 100);
+    }
+
+    //digest the queue of open buy/sell orders
+    consume() {
+        this.logger('consuming.', '');
+        //this.consuming = true;
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
-    //this one is tricky because coin minimums per trade vary...  e.g BTC (.001) vs NEO (.01) vs REQ (1)
     calculateQuantity() {
-        //return calculated int
+        const minQuantity = Number(this.symbol.filters[1].minQty);
+        const maxQuantity = Number(this.symbol.filters[1].maxQty);
+        const stepSize = Number(this.symbol.filters[1].stepSize);  //minimum quantity difference you can trade by
+        const minNotional = Number(this.symbol.filters[2].minNotional);  //minimum the trade has to be
+        const currentPrice = this.tick.ask;
+        const budget = Number(this.config.budget);
+
+        let quantity = minQuantity;
+        while (quantity * currentPrice <= budget) quantity += stepSize;
+        if (quantity * currentPrice > budget) quantity -= stepSize;
+
+        assert(quantity >= minQuantity && quantity <= maxQuantity, 'invalid quantity');
+
+        return quantity.toFixed(8);
     }
 
     //purchase quantity of coin @ this.tick.ask and only continue executing W.O.L.F if this limit buy order is FILLED.
     async purchase() {
         //calculateQuantity
-        //limit buy
+        //limit buy (push to queue)
         //check if bought
         //check if bought
         //check if bought
@@ -55,14 +86,13 @@ module.exports = class Wolf {
 
     //sell quantity of coin @ this.transaction.targetPrice and only continue executing W.O.L.F if this limit sell order is FILLED.
     async sell() {
-        //limit sell
+        //limit sell (push to queue)
         //check if sold
         //check if sold
         //check if sold
             //update this.transaction
             //write to file
             //text mobile device
-            //this.executing = false;
     }
 
 /*
@@ -72,12 +102,14 @@ module.exports = class Wolf {
         //purchase();
         //sell();
         //repeat();
+        //this.executing = false;
     }
 
     async short(){
         //sell();
         //purchase();
         //repeat();
+        //this.executing = false;
     }
 */
 
