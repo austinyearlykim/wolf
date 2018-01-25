@@ -3,8 +3,8 @@ const Wolf = require('./modules/wolf.js');
 
 const config = {
     tradingPair: process.env.TRADING_PAIR,
-    strategy: 'long',
-    profitPercentage: null,
+    strategy: process.env.STRATEGY,
+    profitPercentage: process.env.PROFIT_PERCENTAGE,
     budget: process.env.BUDGET
 };
 const wolf = new Wolf(config);
