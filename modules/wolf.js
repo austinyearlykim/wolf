@@ -1,4 +1,5 @@
 const binance = require('./binance.js');
+const fs = require('fs');
 const assert = require('assert');
 
 module.exports = class Wolf {
@@ -18,7 +19,7 @@ module.exports = class Wolf {
         //get trading pair information
         const exchangeInfo = await binance.exchangeInfo();
         exchangeInfo.symbols.forEach((symbol) => {
-            if (symbol.symbol === this.config.tradingPair) console.log(symbol); return this.symbol = symbol;
+            if (symbol.symbol === this.config.tradingPair) return this.symbol = symbol;
         });
         //setup/start ticker
         this.ticker = binance.ws.partialDepth({ symbol: this.config.tradingPair, level: 5 }, (depth) => {
@@ -34,23 +35,22 @@ module.exports = class Wolf {
     //execute W.O.L.F
     execute() {
         this.executing = true;
-        console.log('execute')
         if (this.config.strategy === 'long' || this.config.strategy === 'LONG') {
-            console.log('long');
+            this.logger('Executing...', this.config.strategy);
             this.purchase();
         }
-        if (this.config.strategy === 'short' || this.config.strategy === 'SHORT') {
-            console.log('short');
-            this.sell(REPLACE_THIS_WITH_QUANTITY);
-        }
+        // TODO
+        // if (this.config.strategy === 'short' || this.config.strategy === 'SHORT') {
+        //     this.logger('Executing...', this.config.strategy);
+        //     this.sell(REPLACE_THIS_WITH_QUANTITY);
+        // }
     }
 
     //digest the queue of open buy/sell orders
     async consume() {
-        console.log('consuming');
-
         if (!this.queue.length) return;
         this.consuming = true;
+        this.logger('Consuming queue...', '');
 
         //iterate through queue and hold in memory FILLED transactions
         const transactions = {};
@@ -59,6 +59,7 @@ module.exports = class Wolf {
             const transaction = await binance.getOrder({ symbol: this.config.tradingPair, orderId: txn.orderId });
             if (transaction.status === 'FILLED') {
                 transactions[txn.orderId] = transaction;
+                this.writeToLedger(Date.now(), transaction.side, transaction.executedQty, transaction.price);
             }
         }
         const orderIds = Object.keys(transactions);
@@ -73,7 +74,7 @@ module.exports = class Wolf {
             const txn = transactions[key];
             if (txn.side === 'BUY') {
                 const price = Number(txn.price);
-                const profit = price + (price * Number(this.config.profitPercentage));
+                const profit = price + (price * Number(this.config.profitPercentage) + (price * .001));
                 this.sell(txn.exectedQty, profit);
             }
             if (txn.side === 'SELL') {
@@ -86,7 +87,7 @@ module.exports = class Wolf {
         //allows wolf to continue execution after one successful half of a trade
         // this.executing = false;
         this.consuming = false;
-        console.log('consumed');
+        this.logger('Consumed queue.', '');
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
@@ -97,35 +98,33 @@ module.exports = class Wolf {
         const currentPrice = this.tick.ask;
         const budget = Number(this.config.budget);
 
-        let quantity = minQuantity; // <-------------------------------------------------------- THIS NEEDS TO BE LOOKED AT AGAIN.. WHY DOES THIS EQUAL ONE?
-        console.log('1', minQuantity, this.symbol.filters[1].minQty, this.symbol.filters[1].maxQty) // <-------------------------------------------------------- THIS NEEDS TO BE LOOKED AT AGAIN..
-        while (quantity * currentPrice <= budget) quantity += stepSize;  // <-------------------------------------------------------- THIS NEEDS TO BE LOOKED AT AGAIN..
+        let quantity = minQuantity;
+        while (quantity * currentPrice <= budget) quantity += stepSize;
         if (quantity * currentPrice > budget) quantity -= stepSize;
         if (quantity === 0) quantity = minQuantity;
-        console.log('QUANTITY: ', quantity);
+
         assert(quantity >= minQuantity && quantity <= maxQuantity, 'invalid quantity');
 
+        this.logger('Quantity Calculated: ', quantity.toFixed(8));
         return quantity.toFixed(8);
     }
 
     //purchase quantity of coin @ this.tick.bid and only continue executing W.O.L.F if this limit buy order is FILLED.
     async purchase(quantity, price) {
-        console.log('purchasing');
         const tickSize = Number(this.symbol.filters[0].tickSize);  //minimum price difference you can trade by
         const sigFig = (this.symbol.filters[0].minPrice).indexOf('1') - 2;
         const unconfirmedPurchase = await binance.orderTest({ symbol: this.config.tradingPair, side: 'BUY', quantity: (quantity && quantity.toFixed(8)) || this.calculateQuantity(), price: (price && price.toFixed(sigFig)) || (this.tick.bid + tickSize).toFixed(sigFig) });
         this.queue.push(unconfirmedPurchase);
-        console.log('purchase pushed', unconfirmedPurchase);
+        this.logger('Purchasing...', unconfirmedPurchase.symbol);
     }
 
     //sell quantity of coin and only continue executing W.O.L.F if this limit sell order is FILLED.
     async sell(quantity, profit) {
-        console.log('selling');
         const tickSize = Number(this.symbol.filters[0].tickSize);  //minimum price difference you can trade by
         const sigFig = (this.symbol.filters[0].minPrice).indexOf('1') - 2;
         const unconfirmedSell = await binance.orderTest({ symbol: this.config.tradingPair, side: 'SELL', quantity: quantity.toFixed(8), price: profit.toFixed(sigFig) });
         this.queue.push(unconfirmedSell);
-        console.log('sell pushed', unconfirmedSell);
+        this.logger('Selling...', unconfirmedSell.symbol);
     }
 
     //function to stop W.O.L.F and kill the node process
@@ -137,11 +136,12 @@ module.exports = class Wolf {
     //utility function to console.log formatted messages
     logger(a, b) {
         if (process.env.LOGGING === 'true' || process.env.LOGGING === 'TRUE') {
-            const template = '[WOLF]:::: '
-            console.log(template, a, b);
+            console.log(`[WOLF]:::: ${a} ${b}`);
         }
     }
 
-    //function to log profits to a .csv file
-    writeToFile() {}
+    //function to log profits to a ledger.csv file
+    async writeToLedger(date, side, amount, price) {
+        fs.appendFileSync('ledger.csv', `${date} ${side} ${amount} ${price} \n`);
+    }
 };
