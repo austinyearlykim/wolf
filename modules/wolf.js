@@ -34,44 +34,39 @@ module.exports = class Wolf {
 
     //execute W.O.L.F
     execute() {
+        this.logger('Executing...', '');
         this.executing = true;
-        if (this.config.strategy === 'long' || this.config.strategy === 'LONG') {
-            this.logger('Executing...', this.config.strategy);
-            this.purchase();
-        }
-        // TODO
-        // if (this.config.strategy === 'short' || this.config.strategy === 'SHORT') {
-        //     this.logger('Executing...', this.config.strategy);
-        //     this.sell(REPLACE_THIS_WITH_QUANTITY);
-        // }
+        this.purchase();
     }
 
     //digest the queue of open buy/sell orders
     async consume() {
+        this.logger('Consuming queue...', 'Orders in queue: ' + this.queue.length);
         if (!this.queue.length) return;
         this.consuming = true;
-        this.logger('Consuming queue...', '');
 
         //iterate through queue and hold in memory FILLED transactions
-        const transactions = {};
+        const filledTransactions = {};
         for (let i = 0; i < this.queue.length; i++) {
             const txn = this.queue[i];
             const transaction = await binance.getOrder({ symbol: this.config.tradingPair, orderId: txn.orderId });
             if (transaction.status === 'FILLED') {
-                transactions[txn.orderId] = transaction;
-                this.writeToLedger(Date.now(), transaction.side, transaction.executedQty, transaction.price);
+                filledTransactions[txn.orderId] = transaction;
+                const side = transaction.side === 'BUY' ? 'PURCHASED' : 'SOLD';
+                this.logger(side + ': ' + transaction.executedQty + transaction.symbol + ' @ ', transaction.price);
+                this.writeToLedger(Date.now(), transaction.symbol, transaction.side, transaction.executedQty, transaction.price);
             }
         }
-        const orderIds = Object.keys(transactions);
+        const orderIds = Object.keys(filledTransactions);
 
-        //filter out all FILLED transactions from queue
+        //filter out all FILLED filledTransactions from queue
         this.queue = this.queue.filter((txn) => {
             return orderIds.indexOf(txn.orderId) === -1;
         });
 
-        //repopulate queue with closing transactions
-        for (let key in transactions) {
-            const txn = transactions[key];
+        //repopulate queue with closing (unconfirmed) transactions
+        for (let key in filledTransactions) {
+            const txn = filledTransactions[key];
             if (txn.side === 'BUY') {
                 const price = Number(txn.price);
                 const profit = price + (price * Number(this.config.profitPercentage) + (price * .001));
@@ -84,14 +79,16 @@ module.exports = class Wolf {
             }
         }
 
+        this.logger('Consumed queue.', 'Orders in queue: ' + this.queue.length);
+
         //allows wolf to continue execution after one successful half of a trade
-        // this.executing = false;
         this.consuming = false;
-        this.logger('Consumed queue.', '');
+        this.executing = false;
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
     calculateQuantity() {
+        this.logger('Calculating quantity...', '');
         const minQuantity = Number(this.symbol.filters[1].minQty);
         const maxQuantity = Number(this.symbol.filters[1].maxQty);
         const stepSize = Number(this.symbol.filters[1].stepSize);  //minimum quantity difference you can trade by
@@ -129,7 +126,7 @@ module.exports = class Wolf {
 
     //function to stop W.O.L.F and kill the node process
     terminate() {
-        this.logger(' Stopping W.O.L.F... terminating node process. ');
+        this.logger('Terminating W.O.L.F...');
         process.exit(0);
     }
 
@@ -141,7 +138,7 @@ module.exports = class Wolf {
     }
 
     //function to log profits to a ledger.csv file
-    async writeToLedger(date, side, amount, price) {
-        fs.appendFileSync('ledger.csv', `${date} ${side} ${amount} ${price} \n`);
+    async writeToLedger(date, pair, side, amount, price) {
+        fs.appendFileSync('ledger.csv', `${date} ${pair} ${side} ${amount} ${price} \n`);
     }
 };
