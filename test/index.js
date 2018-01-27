@@ -29,8 +29,6 @@ before(function(done) {
 });
 
 after(function(done) {
-    console.log('Validation & tests are successful! \n'
-    + 'W.O.L.F is on and starting to programmaticly trade. \n'
-    + 'Good luck!');
+    console.log('Validation & tests are successful!');
     done();
 })
