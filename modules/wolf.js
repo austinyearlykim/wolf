@@ -1,4 +1,5 @@
 const binance = require('./binance.js');
+const twilio = require('./twilio.js');
 const fs = require('fs');
 const assert = require('assert');
 
@@ -34,16 +35,16 @@ module.exports = class Wolf {
 
     //execute W.O.L.F
     execute() {
-        this.logger('Executing...', '');
         this.executing = true;
+        this.logger('Executing...', '');
         this.purchase();
     }
 
     //digest the queue of open buy/sell orders
     async consume() {
-        this.logger('Consuming queue...', 'Orders in queue: ' + this.queue.length);
         if (!this.queue.length) return;
         this.consuming = true;
+        this.logger('Consuming queue...', 'Orders in queue: ' + this.queue.length);
 
         //iterate through queue and hold in memory FILLED transactions
         const filledTransactions = {};
@@ -55,6 +56,10 @@ module.exports = class Wolf {
                 const side = transaction.side === 'BUY' ? 'PURCHASED' : 'SOLD';
                 this.logger(side + ': ' + transaction.executedQty + transaction.symbol + ' @ ', transaction.price);
                 this.writeToLedger(Date.now(), transaction.symbol, transaction.side, transaction.executedQty, transaction.price);
+                if (transaction.side === 'SELL') {
+                    await twilio.sendText(`${side} ${transaction.symbol}`);
+                    this.executing = false;
+                }
             }
         }
         const orderIds = Object.keys(filledTransactions);
@@ -80,10 +85,7 @@ module.exports = class Wolf {
         }
 
         this.logger('Consumed queue.', 'Orders in queue: ' + this.queue.length);
-
-        //allows wolf to continue execution after one successful half of a trade
         this.consuming = false;
-        this.executing = false;
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
