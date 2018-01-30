@@ -64,23 +64,26 @@ module.exports = class Wolf {
         }
         const orderIds = Object.keys(filledTransactions);
 
+        this.logger('Filtering queue...', this.queue.length);
         //filter out all FILLED filledTransactions from queue
-        this.queue = this.queue.filter((txn) => {
-            return orderIds.indexOf(txn.orderId) === -1;
+        const filteredQueue = this.queue.filter((txn) => {
+            return orderIds.indexOf(String(txn.orderId)) === -1;
         });
+        this.queue = filteredQueue;
+        this.logger('Filtered queue...', filteredQueue.length);
 
         //repopulate queue with closing (unconfirmed) transactions
         for (let key in filledTransactions) {
             const txn = filledTransactions[key];
             if (txn.side === 'BUY') {
                 const price = Number(txn.price);
-                const profit = price + (price * Number(this.config.profitPercentage) + (price * .001));
-                this.sell(txn.exectedQty, profit);
+                const profit = price + ((price * Number(this.config.profitPercentage)/100) + (price * .001));
+                this.sell(Number(txn.executedQty), profit);
             }
             if (txn.side === 'SELL') {
                 const price = Number(txn.price);
                 const profit = price - (price * Number(this.config.profitPercentage));
-                this.purchase(txn.exectedQty, profit);
+                this.purchase(Number(txn.executedQty), profit);
             }
         }
 
@@ -110,20 +113,28 @@ module.exports = class Wolf {
 
     //purchase quantity of coin @ this.tick.bid and only continue executing W.O.L.F if this limit buy order is FILLED.
     async purchase(quantity, price) {
-        const tickSize = Number(this.symbol.filters[0].tickSize);  //minimum price difference you can trade by
-        const sigFig = (this.symbol.filters[0].minPrice).indexOf('1') - 2;
-        const unconfirmedPurchase = await binance.orderTest({ symbol: this.config.tradingPair, side: 'BUY', quantity: (quantity && quantity.toFixed(8)) || this.calculateQuantity(), price: (price && price.toFixed(sigFig)) || (this.tick.bid + tickSize).toFixed(sigFig) });
-        this.queue.push(unconfirmedPurchase);
-        this.logger('Purchasing...', unconfirmedPurchase.symbol);
+        try {
+            const tickSize = Number(this.symbol.filters[0].tickSize);  //minimum price difference you can trade by
+            const sigFig = (this.symbol.filters[0].minPrice).indexOf('1') - 2;
+            const unconfirmedPurchase = await binance.order({ symbol: this.config.tradingPair, side: 'BUY', quantity: (quantity && quantity.toFixed(8)) || this.calculateQuantity(), price: (price && price.toFixed(sigFig)) || (this.tick.bid + tickSize).toFixed(sigFig) });
+            this.queue.push(unconfirmedPurchase);
+            this.logger('Purchasing...', unconfirmedPurchase.symbol);
+        } catch(err) {
+            return this.logger('PURCHASE ERROR: ', err.message);
+        }
     }
 
     //sell quantity of coin and only continue executing W.O.L.F if this limit sell order is FILLED.
     async sell(quantity, profit) {
-        const tickSize = Number(this.symbol.filters[0].tickSize);  //minimum price difference you can trade by
-        const sigFig = (this.symbol.filters[0].minPrice).indexOf('1') - 2;
-        const unconfirmedSell = await binance.orderTest({ symbol: this.config.tradingPair, side: 'SELL', quantity: quantity.toFixed(8), price: profit.toFixed(sigFig) });
-        this.queue.push(unconfirmedSell);
-        this.logger('Selling...', unconfirmedSell.symbol);
+        try {
+            const tickSize = Number(this.symbol.filters[0].tickSize);  //minimum price difference you can trade by
+            const sigFig = (this.symbol.filters[0].minPrice).indexOf('1') - 2;
+            const unconfirmedSell = await binance.order({ symbol: this.config.tradingPair, side: 'SELL', quantity: quantity.toFixed(8), price: profit.toFixed(sigFig) });
+            this.queue.push(unconfirmedSell);
+            this.logger('Selling...', unconfirmedSell.symbol);
+        } catch(err) {
+            return this.logger('SELL ERROR: ', err.message);
+        }
     }
 
     //function to stop W.O.L.F and kill the node process
