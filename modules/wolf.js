@@ -50,7 +50,12 @@ module.exports = class Wolf {
         const filledTransactions = {};
         for (let i = 0; i < this.queue.length; i++) {
             const txn = this.queue[i];
-            const transaction = await binance.getOrder({ symbol: this.config.tradingPair, orderId: txn.orderId });
+            let transaction;
+            try {
+                transaction = await binance.getOrder({ symbol: this.config.tradingPair, orderId: txn.orderId });
+            } catch(err) {
+                return;
+            }
             if (transaction.status === 'FILLED') {
                 filledTransactions[txn.orderId] = transaction;
                 const side = transaction.side === 'BUY' ? 'PURCHASED' : 'SOLD';
