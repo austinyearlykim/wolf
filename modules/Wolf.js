@@ -20,6 +20,7 @@ module.exports = class Wolf {
 
     //get trading pair information and initiate ticker
     async init() {
+        //.env stringifies its values.  we convert these strings into numbers here so we don't have to later.
         this.config.budget = Number(this.config.budget);
         this.config.profitPercentage = Number(this.config.profitPercentage)/100;
 
@@ -88,12 +89,12 @@ module.exports = class Wolf {
             const txn = filledTransactions[key];
             if (txn.side === 'BUY') {
                 const price = Number(txn.price);
-                const profit = price + ((price * Number(this.config.profitPercentage)/100) + (price * .001));
+                const profit = price + (price * this.config.profitPercentage) + (price * .001));
                 this.sell(Number(txn.executedQty), profit);
             }
             if (txn.side === 'SELL') {
                 const price = Number(txn.price);
-                const profit = price - (price * Number(this.config.profitPercentage));
+                const profit = price - (price * this.config.profitPercentage);
                 this.purchase(Number(txn.executedQty), profit);
             }
         }
