@@ -20,6 +20,9 @@ module.exports = class Wolf {
 
     //get trading pair information and initiate ticker
     async init() {
+        this.config.budget = Number(this.config.budget);
+        this.config.profitPercentage = Number(this.config.profitPercentage)/100;
+
         //get trading pair information
         const symbolConfig = { tradingPair: this.config.tradingPair };
         const symbol = new Symbol(symbolConfig);
@@ -102,11 +105,12 @@ module.exports = class Wolf {
     //calculate quantity of coin to purchase based on given budget from .env
     calculateQuantity() {
         this.logger('Calculating quantity...', '');
-        const minQuantity = Number(this.symbol.filters[1].minQty);
-        const maxQuantity = Number(this.symbol.filters[1].maxQty);
-        const stepSize = Number(this.symbol.filters[1].stepSize);  //minimum quantity difference you can trade by
-        const currentPrice = this.tick.ask;
-        const budget = Number(this.config.budget);
+        const symbol = this.symbol.info;
+        const minQuantity = symbol.minQty;
+        const maxQuantity = symbol.maxQty;
+        const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
+        const currentPrice = this.ticker.tick.ask;
+        const budget = this.config.budget;
 
         let quantity = minQuantity;
         while (quantity * currentPrice <= budget) quantity += stepSize;
@@ -122,9 +126,15 @@ module.exports = class Wolf {
     //purchase quantity of coin @ this.tick.bid and only continue executing W.O.L.F if this limit buy order is FILLED.
     async purchase(quantity, price) {
         try {
-            const tickSize = Number(this.symbol.filters[0].tickSize);  //minimum price difference you can trade by
-            const sigFig = (this.symbol.filters[0].minPrice).indexOf('1') - 2;
-            const unconfirmedPurchase = await binance.order({ symbol: this.config.tradingPair, side: 'BUY', quantity: (quantity && quantity.toFixed(8)) || this.calculateQuantity(), price: (price && price.toFixed(sigFig)) || (this.tick.bid + tickSize).toFixed(sigFig) });
+            const symbol = this.symbol.info;
+            const tickSize = symbol.tickSize;  //minimum price difference you can trade by
+            const sigFig = symbol.sigFig;
+            const unconfirmedPurchase = await binance.order({
+                symbol: this.config.tradingPair,
+                side: 'BUY',
+                quantity: (quantity && quantity.toFixed(8)) || this.calculateQuantity(),
+                price: (price && price.toFixed(sigFig)) || (this.ticker.info.bid + tickSize).toFixed(sigFig)
+            });
             this.queue.push(unconfirmedPurchase);
             this.logger('Purchasing...', unconfirmedPurchase.symbol);
         } catch(err) {
@@ -135,9 +145,15 @@ module.exports = class Wolf {
     //sell quantity of coin and only continue executing W.O.L.F if this limit sell order is FILLED.
     async sell(quantity, profit) {
         try {
-            const tickSize = Number(this.symbol.filters[0].tickSize);  //minimum price difference you can trade by
-            const sigFig = (this.symbol.filters[0].minPrice).indexOf('1') - 2;
-            const unconfirmedSell = await binance.order({ symbol: this.config.tradingPair, side: 'SELL', quantity: quantity.toFixed(8), price: profit.toFixed(sigFig) });
+            const symbol = this.symbol.info;
+            const tickSize = symbol.tickSize;  //minimum price difference you can trade by
+            const sigFig = symbol.sigFig;
+            const unconfirmedSell = await binance.order({
+                symbol: this.config.tradingPair,
+                side: 'SELL',
+                quantity: quantity.toFixed(8),
+                price: profit.toFixed(sigFig)
+            });
             this.queue.push(unconfirmedSell);
             this.logger('Selling...', unconfirmedSell.symbol);
         } catch(err) {

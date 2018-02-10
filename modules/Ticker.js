@@ -31,19 +31,18 @@ module.exports = class Ticker {
     init() {
         this.ticker = binance.ws.partialDepth({ symbol: this.tradingPair, level: 5 }, (depth) => {
             const temp = {
-                bid: depth.bids[0].price,
-                ask: depth.bids[0].price
+                bidPrice: depth.bids[0].price,
+                askPrice: depth.bids[0].price
             };
-            this.tick = temp;
+            this.tick = Object.assign(temp, this.getters());
             this.callbacks.forEach((cb) => cb(););
         });
     }
 
-    get bid() {
-        return Number(this.tick.bid);
-    }
-
-    get ask() {
-        return Number(this.tick.ask);
+    getters() {
+        return {
+            get bid() { return Number(this.bidPrice) },
+            get ask() { return Number(this.askPrice) }
+        }
     }
 }
