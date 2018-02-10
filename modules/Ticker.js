@@ -7,9 +7,9 @@ const Ticker = require('./modules/Ticker.js');
 init() {
     const tickerConfig = {
         tradingPair: this.config.tradingPair,
-        cbs: [
-            !this.executing && this.execute(),
-            !this.consuming && this.consume()
+        callbacks: [
+            this.execute,
+            this.consume
         ]
     };
     const ticker = new Ticker(tickerConfig);
@@ -23,7 +23,7 @@ init() {
 module.exports = class Ticker {
     constructor(config) {
         this.tradingPair = config.tradingPair;
-        this.cbs = config.cbs;
+        this.callbacks = config.callbacks;
         this.ticker = null;
         this.tick = {};
     }
@@ -35,7 +35,7 @@ module.exports = class Ticker {
                 ask: depth.bids[0].price
             };
             this.tick = temp;
-            this.cbs.forEach((cb) => if (cb) cb(); );
+            this.callbacks.forEach((cb) => cb(););
         });
     }
 

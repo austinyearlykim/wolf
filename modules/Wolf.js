@@ -1,4 +1,6 @@
 const binance = require('./binance.js');
+const Symbol = require('./Symbol.js');
+const Ticker = require('./Ticker.js');
 const twilio = require('./twilio.js');
 const fs = require('fs');
 const assert = require('assert');
@@ -6,44 +8,45 @@ const assert = require('assert');
 module.exports = class Wolf {
     constructor(config) {
         this.config = config;
-        this.symbol = null;
-        this.ticker = null;  //binance websocket responsible for updating bid/ask prices per second
-        this.tick = null;  //up to date bid/ask prices {bid: 0.12345678, ask: 0.12345678}
-        this.executing = false;
-        this.consuming = false;
+        this.symbol = null; //meta information about trading pair
+        this.ticker = null; //bid/ask prices updated per tick
+        this.state = {
+            executing: false,
+            consuming: false
+        };
         this.queue = [];
         this.init();
     }
 
-    //initiate ticker
+    //get trading pair information and initiate ticker
     async init() {
         //get trading pair information
-        const exchangeInfo = await binance.exchangeInfo();
-        exchangeInfo.symbols.forEach((symbol) => {
-            if (symbol.symbol === this.config.tradingPair) return this.symbol = symbol;
-        });
+        const symbolConfig = { tradingPair: this.config.tradingPair };
+        const symbol = new Symbol(symbolConfig);
+        this.symbol = await symbol.init();
+
         //setup/start ticker
-        this.ticker = binance.ws.partialDepth({ symbol: this.config.tradingPair, level: 5 }, (depth) => {
-            const temp = {};
-            temp.bid = Number(depth.bids[0].price);
-            temp.ask = Number(depth.asks[0].price);
-            this.tick = temp;
-            !this.executing && this.execute();
-            !this.consuming && this.consume();
-        });
+        const tickerConfig = {
+            tradingPair: this.config.tradingPair,
+            callbacks: [ this.execute, this.consume ]
+        };
+        const ticker = new Ticker(tickerConfig);
+        this.ticker = ticker.init();
     }
 
     //execute W.O.L.F
     execute() {
-        this.executing = true;
+        if (this.state.executing) return;
+        this.state.executing = true;
         this.logger('Executing...', '');
         this.purchase();
     }
 
     //digest the queue of open buy/sell orders
     async consume() {
+        if (this.state.consuming) return;
         if (!this.queue.length) return;
-        this.consuming = true;
+        this.state.consuming = true;
         this.logger('Consuming queue...', 'Orders in queue: ' + this.queue.length);
 
         //iterate through queue and hold in memory FILLED transactions
@@ -63,7 +66,7 @@ module.exports = class Wolf {
                 this.writeToLedger(Date.now(), transaction.symbol, transaction.side, transaction.executedQty, transaction.price);
                 if (transaction.side === 'SELL') {
                     await twilio.sendText(`${side} ${transaction.symbol}`);
-                    this.executing = false;
+                    this.state.executing = false;
                 }
             }
         }
@@ -93,7 +96,7 @@ module.exports = class Wolf {
         }
 
         this.logger('Consumed queue.', 'Orders in queue: ' + this.queue.length);
-        this.consuming = false;
+        this.state.consuming = false;
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
