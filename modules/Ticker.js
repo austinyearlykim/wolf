@@ -25,7 +25,7 @@ module.exports = class Ticker {
         this.tradingPair = config.tradingPair;
         this.callbacks = config.callbacks;
         this.ticker = null;
-        this.tick = {};
+        this.meta = {};
     }
 
     init() {
@@ -34,7 +34,7 @@ module.exports = class Ticker {
                 bidPrice: depth.bids[0].price,
                 askPrice: depth.bids[0].price
             };
-            this.tick = Object.assign(temp, this.getters());
+            this.meta = Object.assign(temp, this.getters());
             this.callbacks.forEach((cb) => cb(););
         });
     }

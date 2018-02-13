@@ -1,6 +1,7 @@
 const binance = require('./binance.js');
 const Symbol = require('./Symbol.js');
 const Ticker = require('./Ticker.js');
+const Queue = require('./Queue.js');
 const twilio = require('./twilio.js');
 const fs = require('fs');
 const assert = require('assert');
@@ -10,11 +11,11 @@ module.exports = class Wolf {
         this.config = config;
         this.symbol = null; //meta information about trading pair
         this.ticker = null; //bid/ask prices updated per tick
+        this.queue = null; //queue for unfilled transactions
         this.state = {
             executing: false,
             consuming: false
         };
-        this.queue = [];
         this.init();
     }
 
@@ -25,8 +26,7 @@ module.exports = class Wolf {
         this.config.profitPercentage = Number(this.config.profitPercentage)/100;
 
         //get trading pair information
-        const symbolConfig = { tradingPair: this.config.tradingPair };
-        const symbol = new Symbol(symbolConfig);
+        const symbol = new Symbol({ tradingPair: this.config.tradingPair });
         this.symbol = await symbol.init();
 
         //setup/start ticker
@@ -36,6 +36,13 @@ module.exports = class Wolf {
         };
         const ticker = new Ticker(tickerConfig);
         this.ticker = ticker.init();
+
+        //setup/start queue
+        const queue = new Queue({
+            tradingPair: this.config.tradingPair,
+            state: this.state
+        });
+        this.queue = queue.init();
     }
 
     //execute W.O.L.F
@@ -49,64 +56,35 @@ module.exports = class Wolf {
     //digest the queue of open buy/sell orders
     async consume() {
         if (this.state.consuming) return;
-        if (!this.queue.length) return;
+        if (!this.queue.meta.length) return;
+
         this.state.consuming = true;
-        this.logger('Consuming queue...', 'Orders in queue: ' + this.queue.length);
+        this.logger('Consuming queue...', 'Orders in queue: ' + this.queue.meta.length);
 
-        //iterate through queue and hold in memory FILLED transactions
-        const filledTransactions = {};
-        for (let i = 0; i < this.queue.length; i++) {
-            const txn = this.queue[i];
-            let transaction;
-            try {
-                transaction = await binance.getOrder({ symbol: this.config.tradingPair, orderId: txn.orderId });
-            } catch(err) {
-                return;
-            }
-            if (transaction.status === 'FILLED') {
-                filledTransactions[txn.orderId] = transaction;
-                const side = transaction.side === 'BUY' ? 'PURCHASED' : 'SOLD';
-                this.logger(side + ': ' + transaction.executedQty + transaction.symbol + ' @ ', transaction.price);
-                this.writeToLedger(Date.now(), transaction.symbol, transaction.side, transaction.executedQty, transaction.price);
-                if (transaction.side === 'SELL') {
-                    await twilio.sendText(`${side} ${transaction.symbol}`);
-                    this.state.executing = false;
-                }
-            }
-        }
-        const orderIds = Object.keys(filledTransactions);
-
-        this.logger('Filtering queue...', this.queue.length);
-        //filter out all FILLED filledTransactions from queue
-        const filteredQueue = this.queue.filter((txn) => {
-            return orderIds.indexOf(String(txn.orderId)) === -1;
-        });
-        this.queue = filteredQueue;
-        this.logger('Filtered queue...', filteredQueue.length);
+        const filledTransactions = await this.queue.digest();
 
         //repopulate queue with closing (unconfirmed) transactions
-        for (let key in filledTransactions) {
-            const txn = filledTransactions[key];
+        for (let orderId in filledTransactions) {
+            const txn = filledTransactions[orderId];
+            const price = Number(txn.price);
             if (txn.side === 'BUY') {
-                const price = Number(txn.price);
                 const profit = price + (price * this.config.profitPercentage) + (price * .001));
                 this.sell(Number(txn.executedQty), profit);
             }
             if (txn.side === 'SELL') {
-                const price = Number(txn.price);
                 const profit = price - (price * this.config.profitPercentage);
                 this.purchase(Number(txn.executedQty), profit);
             }
         }
 
-        this.logger('Consumed queue.', 'Orders in queue: ' + this.queue.length);
+        this.logger('Consumed queue.', 'Orders in queue: ' + this.queue.meta.length);
         this.state.consuming = false;
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
     calculateQuantity() {
         this.logger('Calculating quantity...', '');
-        const symbol = this.symbol.info;
+        const symbol = this.symbol.meta;
         const minQuantity = symbol.minQty;
         const maxQuantity = symbol.maxQty;
         const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
@@ -127,14 +105,14 @@ module.exports = class Wolf {
     //purchase quantity of coin @ this.tick.bid and only continue executing W.O.L.F if this limit buy order is FILLED.
     async purchase(quantity, price) {
         try {
-            const symbol = this.symbol.info;
+            const symbol = this.symbol.meta;
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
             const sigFig = symbol.sigFig;
             const unconfirmedPurchase = await binance.order({
                 symbol: this.config.tradingPair,
                 side: 'BUY',
                 quantity: (quantity && quantity.toFixed(8)) || this.calculateQuantity(),
-                price: (price && price.toFixed(sigFig)) || (this.ticker.info.bid + tickSize).toFixed(sigFig)
+                price: (price && price.toFixed(sigFig)) || (this.ticker.meta.bid + tickSize).toFixed(sigFig)
             });
             this.queue.push(unconfirmedPurchase);
             this.logger('Purchasing...', unconfirmedPurchase.symbol);
@@ -146,7 +124,7 @@ module.exports = class Wolf {
     //sell quantity of coin and only continue executing W.O.L.F if this limit sell order is FILLED.
     async sell(quantity, profit) {
         try {
-            const symbol = this.symbol.info;
+            const symbol = this.symbol.meta;
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
             const sigFig = symbol.sigFig;
             const unconfirmedSell = await binance.order({

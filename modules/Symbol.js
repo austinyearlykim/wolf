@@ -12,8 +12,7 @@ init() {
     };
     const symbol = new Symbol(symbolConfig);
     this.symbol = await ticker.init();
-    console.log(this.symbol.filters[1].minPrice);
-    console.log(this.symbol.filters[1].maxPrice);
+    console.log(this.symbol.meta.minPrice);
 }
 
 */
@@ -21,14 +20,14 @@ init() {
 module.exports = class Symbol {
     constructor(config) {
         this.tradingPair = config.tradingPair;
-        this.info = {};
+        this.meta = {};
     }
 
     async init() {
         const exchangeInfo = await binance.exchangeInfo();
         exchangeInfo.symbols.forEach((symbol) => {
             if (symbol.symbol === this.tradingPair) {
-                return this.info = Object.assign(symbol, this.getters());
+                return this.meta = Object.assign(symbol, this.getters());
             }
         });
     }
