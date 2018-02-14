@@ -1,6 +1,7 @@
 const binance = require('./binance.js');
 const twilio = require('./twilio.js');
 const assert = require('assert');
+const Ledger = require('./modules/Ledger.js');
 
 /*
 
@@ -21,7 +22,8 @@ init() {
 module.exports = class Queue {
     constructor(config) {
         this.tradingPair = config.tradingPair;
-        this.state = config.state;  //CHECK SYNTAX
+        this.state = config.state;
+        this.ledger = null;
         this.meta = {
             queue: {}
         };
@@ -29,6 +31,8 @@ module.exports = class Queue {
 
     init() {
         this.meta = Object.assign(this.meta, this.getters());
+        const ledger = new Ledger({ filename: 'ledger' });
+        this.ledger = ledger.init();
     }
 
     push(txn) {
@@ -56,7 +60,7 @@ module.exports = class Queue {
                     filledTxns[txn.orderId] = txn;
                     const side = txn.side === 'BUY' ? 'PURCHASED' : 'SOLD';
                     console.log(side + ': ' + txn.executedQty + txn.symbol + ' @ ', txn.price)
-                    // this.writeToLedger(Date.now(), transaction.symbol, transaction.side, transaction.executedQty, transaction.price);
+                    this.ledger.write(Date.now(), txn.symbol, txn.side, txn.executedQty, txn.price);
                     if (txn.side === 'SELL') {
                         // await twilio.sendText(`${side} ${txn.symbol}`);
                         this.state.executing = false;
