@@ -62,7 +62,7 @@ module.exports = class Queue {
                     console.log(side + ': ' + txn.executedQty + txn.symbol + ' @ ', txn.price)
                     this.ledger.write(Date.now(), txn.symbol, txn.side, txn.executedQty, txn.price);
                     if (txn.side === 'SELL') {
-                        // await twilio.sendText(`${side} ${txn.symbol}`);
+                        await twilio.sendText(`${side} ${txn.symbol}`);
                         this.state.executing = false;
                     }
                 }

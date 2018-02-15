@@ -10,7 +10,7 @@ twilio.sendText('hello world');
 
 */
 
-class Twilio {
+class T {
     constructor(config) {
         try {
             this.config = config;
@@ -32,9 +32,9 @@ class Twilio {
     }
 }
 
-module.exports = twilio = new Twilio({
+module.exports = twilio = new T({
     accountSid: process.env.TWILIO_ACCOUNT_SID,
-    authToken: process.env.AUTH_TOKEN,
-    fromNumber: process.env.FROM_NUMBER,
-    toNumber: process.env.TO_NUMBER
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    fromNumber: process.env.TWILIO_FROM_NUMBER,
+    toNumber: process.env.TWILIO_TO_NUMBER
 });
