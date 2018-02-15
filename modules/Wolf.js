@@ -2,7 +2,6 @@ const binance = require('./binance.js');
 const Symbol = require('./Symbol.js');
 const Ticker = require('./Ticker.js');
 const Queue = require('./Queue.js');
-const twilio = require('./twilio.js');
 const fs = require('fs');
 const assert = require('assert');
 
@@ -49,7 +48,7 @@ module.exports = class Wolf {
     execute() {
         if (this.state.executing) return;
         this.state.executing = true;
-        this.logger('Executing...', '');
+        console.log('Executing...');
         this.purchase();
     }
 
@@ -59,7 +58,7 @@ module.exports = class Wolf {
         if (!this.queue.meta.length) return;
 
         this.state.consuming = true;
-        this.logger('Consuming queue...', 'Orders in queue: ' + this.queue.meta.length);
+        console.log('Consuming queue...', 'Orders in queue: ' + this.queue.meta.length);
 
         const filledTransactions = await this.queue.digest();
 
@@ -77,13 +76,13 @@ module.exports = class Wolf {
             }
         }
 
-        this.logger('Consumed queue.', 'Orders in queue: ' + this.queue.meta.length);
+        console.log('Consumed queue.', 'Orders in queue: ' + this.queue.meta.length);
         this.state.consuming = false;
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
     calculateQuantity() {
-        this.logger('Calculating quantity...', '');
+        console.log('Calculating quantity... ');
         const symbol = this.symbol.meta;
         const minQuantity = symbol.minQty;
         const maxQuantity = symbol.maxQty;
@@ -98,7 +97,7 @@ module.exports = class Wolf {
 
         assert(quantity >= minQuantity && quantity <= maxQuantity, 'invalid quantity');
 
-        this.logger('Quantity Calculated: ', quantity.toFixed(8));
+        console.log('Quantity Calculated: ', quantity.toFixed(8));
         return quantity.toFixed(8);
     }
 
@@ -115,9 +114,9 @@ module.exports = class Wolf {
                 price: (price && price.toFixed(sigFig)) || (this.ticker.meta.bid + tickSize).toFixed(sigFig)
             });
             this.queue.push(unconfirmedPurchase);
-            this.logger('Purchasing...', unconfirmedPurchase.symbol);
+            console.log('Purchasing... ', unconfirmedPurchase.symbol);
         } catch(err) {
-            return this.logger('PURCHASE ERROR: ', err.message);
+            return console.log('PURCHASE ERROR: ', err.message);
         }
     }
 
@@ -134,27 +133,10 @@ module.exports = class Wolf {
                 price: profit.toFixed(sigFig)
             });
             this.queue.push(unconfirmedSell);
-            this.logger('Selling...', unconfirmedSell.symbol);
+            console.log('Selling...', unconfirmedSell.symbol);
         } catch(err) {
-            return this.logger('SELL ERROR: ', err.message);
+            return console.log('SELL ERROR: ', err.message);
         }
     }
 
-    //function to stop W.O.L.F and kill the node process
-    terminate() {
-        this.logger('Terminating W.O.L.F...');
-        process.exit(0);
-    }
-
-    //utility function to console.log formatted messages
-    logger(a, b) {
-        if (process.env.LOGGING === 'true' || process.env.LOGGING === 'TRUE') {
-            console.log(`[WOLF]:::: ${a} ${b}`);
-        }
-    }
-
-    //function to log profits to a ledger.csv file
-    async writeToLedger(date, pair, side, amount, price) {
-        fs.appendFileSync('ledger.csv', `${date} ${pair} ${side} ${amount} ${price} \n`);
-    }
 };
