@@ -46,7 +46,17 @@ module.exports = class Queue {
     }
 
     validateTransaction(txn) {
-        assert(txn._KEY);
+        assert(txn.symbol);
+        assert(txn.orderId);
+        assert(txn.clientOrderId);
+        assert(txn.transactTime);
+        assert(txn.price);
+        assert(txn.origQty);
+        assert(txn.executedQty);
+        assert(txn.status);
+        assert(txn.timeInForce);
+        assert(txn.type);
+        assert(txn.side);
     }
 
     async digest() {
