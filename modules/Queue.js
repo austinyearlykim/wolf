@@ -5,9 +5,9 @@ const Ledger = require('./Ledger.js');
 
 /*
 
-<--- wolf.js --->
+<--- Wolf.js --->
 
-const Queue = require('./modules/Queue.js');
+const Queue = require('./Queue.js');
 
 init() {
     const queue = new Queue({ tradingPair: this.config.tradingPair });

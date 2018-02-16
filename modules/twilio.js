@@ -2,9 +2,9 @@ const Twilio = require('twilio');
 
 /*
 
-<--- wolf.js --->
+<--- Wolf.js --->
 
-const Twilio = require('./modules/Twilio.js');
+const twilio = require('./modules/twilio.js');
 
 twilio.sendText('hello world');
 

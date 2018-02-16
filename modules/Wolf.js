@@ -18,7 +18,6 @@ module.exports = class Wolf {
         this.init();
     }
 
-    //get trading pair information and initiate ticker
     async init() {
         //.env stringifies its values.  we convert these strings into numbers here so we don't have to later.
         this.config.budget = Number(this.config.budget);
@@ -101,7 +100,7 @@ module.exports = class Wolf {
         return quantity.toFixed(8);
     }
 
-    //purchase quantity of coin @ this.tick.bid and only continue executing W.O.L.F if this limit buy order is FILLED.
+    //push an unfilled limit purchase order to the queue
     async purchase(quantity, price) {
         try {
             const symbol = this.symbol.meta;
@@ -121,7 +120,7 @@ module.exports = class Wolf {
         }
     }
 
-    //sell quantity of coin and only continue executing W.O.L.F if this limit sell order is FILLED.
+    //push an unfilled limit sell order to the queue
     async sell(quantity, profit) {
         try {
             const symbol = this.symbol.meta;

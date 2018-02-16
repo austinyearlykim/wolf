@@ -1,9 +1,9 @@
 const binance = require('./binance.js');
 /*
 
-<--- wolf.js --->
+<--- Wolf.js --->
 
-const Ticker = require('./modules/Ticker.js');
+const Ticker = require('./Ticker.js');
 
 init() {
     const tickerConfig = {

@@ -2,9 +2,9 @@ const binance = require('./binance.js');
 
 /*
 
-<--- wolf.js --->
+<--- Wolf.js --->
 
-const Symbol = require('./modules/Symbol.js');
+const Symbol = require('./Symbol.js');
 
 init() {
     const symbolConfig = {

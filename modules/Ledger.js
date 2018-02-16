@@ -2,9 +2,9 @@ const fs = require('fs');
 
 /*
 
-<--- wolf.js --->
+<--- Wolf.js --->
 
-const Ledger = require('./modules/Ledger.js');
+const Ledger = require('./Ledger.js');
 
 init() {
     const ledger = new Ledger({ filename: 'ledger' });
