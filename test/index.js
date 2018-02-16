@@ -29,6 +29,6 @@ before(function(done) {
 });
 
 after(function(done) {
-    console.log('Validation & tests are successful!');
+    process.exit(0);
     done();
 })

@@ -87,7 +87,7 @@ module.exports = class Wolf {
         const minQuantity = symbol.minQty;
         const maxQuantity = symbol.maxQty;
         const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
-        const currentPrice = this.ticker.tick.ask;
+        const currentPrice = this.ticker.meta.ask;
         const budget = this.config.budget;
 
         let quantity = minQuantity;
@@ -116,7 +116,8 @@ module.exports = class Wolf {
             this.queue.push(unconfirmedPurchase);
             console.log('Purchasing... ', unconfirmedPurchase.symbol);
         } catch(err) {
-            return console.log('PURCHASE ERROR: ', err.message);
+            console.log('PURCHASE ERROR: ', err.message);
+            return false;
         }
     }
 
@@ -135,7 +136,8 @@ module.exports = class Wolf {
             this.queue.push(unconfirmedSell);
             console.log('Selling...', unconfirmedSell.symbol);
         } catch(err) {
-            return console.log('SELL ERROR: ', err.message);
+            console.log('SELL ERROR: ', err.message);
+            return false;
         }
     }
 

@@ -30,6 +30,7 @@ module.exports = class Ledger {
 			if (!this.exists()) fs.appendFileSync(this.file, 'date,pair,side,amount,price\n');
 			return true;
 		} catch(err) {
+			console.log('LEDGER ERROR: ', err.message);
 			return false;
 		}
 	}

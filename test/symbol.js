@@ -14,7 +14,7 @@ describe('Symbol', function() {
                 assert(symbol);
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });
@@ -25,7 +25,7 @@ describe('Symbol', function() {
                 assert(await symbol.init());
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });
@@ -46,7 +46,7 @@ describe('Symbol', function() {
                     done();
                 }, 3000);
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });

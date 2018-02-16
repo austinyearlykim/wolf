@@ -20,7 +20,7 @@ describe('Ledger', function() {
                 assert(ledger.file === filename + ledger.extension);
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });
@@ -32,7 +32,7 @@ describe('Ledger', function() {
                 assert(ledger.exists());
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });
@@ -43,7 +43,7 @@ describe('Ledger', function() {
                 assert(ledger.write(Date.now(), 'ETHBTC', 'BUY', '1.5', '.11839756'));
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });

@@ -40,7 +40,7 @@ module.exports = class Ticker {
             });
             return true;
         } catch(err) {
-            console.log(err);
+            console.log('TICKER ERROR: ', err.message);
             return false
         }
     }

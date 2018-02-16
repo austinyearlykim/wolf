@@ -24,7 +24,7 @@ describe('Ticker', function() {
                 assert(ticker.tradingPair = tradingPair);
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });
@@ -35,7 +35,7 @@ describe('Ticker', function() {
                 await ticker.init();
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });
@@ -49,7 +49,7 @@ describe('Ticker', function() {
                     done();
                 }, 4000);
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });
@@ -62,7 +62,7 @@ describe('Ticker', function() {
                 assert(ticker.meta.ask && typeof ticker.meta.ask === 'number');
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });

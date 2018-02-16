@@ -82,9 +82,10 @@ module.exports = class Queue {
                         this.state.executing = false;
                     }
                 }
+                return true;
             } catch(err) {
-                console.log('QUEUE ERROR: ', err);
-                return null;
+                console.log('QUEUE ERROR: ', err.message);
+                return false;
             }
         }
         Object.keys(filledTxns).forEach((orderId) => {

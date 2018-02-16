@@ -33,6 +33,7 @@ module.exports = class Symbol {
             });
             return true;
         } catch(err) {
+            console.log('SYMBOL ERROR: ', err.message);
             return false;
         }
     }
