@@ -1,3 +1,4 @@
+const binance = require('./binance.js');
 /*
 
 <--- wolf.js --->
@@ -24,19 +25,24 @@ module.exports = class Ticker {
     constructor(config) {
         this.tradingPair = config.tradingPair;
         this.callbacks = config.callbacks;
-        this.ticker = null;
         this.meta = {};
     }
 
     init() {
-        this.ticker = binance.ws.partialDepth({ symbol: this.tradingPair, level: 5 }, (depth) => {
-            const temp = {
-                bidPrice: depth.bids[0].price,
-                askPrice: depth.bids[0].price
-            };
-            this.meta = Object.assign(temp, this.getters());
-            this.callbacks.forEach((cb) => cb(););
-        });
+        try {
+            binance.ws.partialDepth({ symbol: this.tradingPair, level: 5 }, (depth) => {
+                const temp = {
+                    bidPrice: depth.bids[0].price,
+                    askPrice: depth.bids[0].price
+                };
+                this.meta = Object.assign(this.getters(), temp);
+                this.callbacks.forEach((cb) => cb());
+            });
+            return true;
+        } catch(err) {
+            console.log(err);
+            return false
+        }
     }
 
     getters() {
