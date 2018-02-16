@@ -14,7 +14,7 @@ init() {
 
 */
 
-class Ledger {
+module.exports = class Ledger {
 	constructor(config) {
 		this.filename = config.filename;
 		this.extension = '.csv';
@@ -22,7 +22,7 @@ class Ledger {
 	}
 
     exists() {
-        return fs.existsSync('../' + this.file);
+        return fs.existsSync(this.file);
     }
 
 	init() {
@@ -34,11 +34,16 @@ class Ledger {
 	}
 
 	write(date, pair, side, amount, price) {
-        if (this.exists()) {
-            fs.appendFileSync(this.file, `${date} ${pair} ${side} ${amount} ${price}\n`);
-        } else {
-            fs.appendFileSync(this.file, 'date,pair,side,amount,price\n');
-            fs.appendFileSync(this.file, `${date},${pair},${side},${amount},${price}\n`);
-        }
+		try {
+			if (this.exists()) {
+				fs.appendFileSync(this.file, `${date} ${pair} ${side} ${amount} ${price}\n`);
+			} else {
+				fs.appendFileSync(this.file, 'date,pair,side,amount,price\n');
+				fs.appendFileSync(this.file, `${date},${pair},${side},${amount},${price}\n`);
+			}
+			return true;
+		} catch(err) {
+			return false
+		}
 	}
 }
