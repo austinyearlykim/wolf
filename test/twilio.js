@@ -10,7 +10,7 @@ shouldTestTwilio && describe('Twilio', function() {
                 assert(await twilio.sendText('If you received this this text it means you are all set to receive SMS notifications of when W.O.L.F executes trades!  Go go go!'), 'text was not sent');
                 done();
             } catch(err) {
-                return console.log(err);
+                return console.log(err.message);
             }
         })();
     });
