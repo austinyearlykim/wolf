@@ -1,7 +1,7 @@
 const binance = require('./binance.js');
 const twilio = require('./twilio.js');
 const assert = require('assert');
-const Ledger = require('./modules/Ledger.js');
+const Ledger = require('./Ledger.js');
 
 /*
 
@@ -30,7 +30,7 @@ module.exports = class Queue {
     }
 
     init() {
-        this.meta = Object.assign(this.meta, this.getters());
+        this.meta = Object.assign(this.getters(), this.meta);
         const ledger = new Ledger({ filename: 'ledger' });
         this.ledger = ledger.init();
     }
@@ -39,24 +39,30 @@ module.exports = class Queue {
         try {
             this.validateTransaction(txn);
             this.meta.queue[txn.orderId] = txn;
+            return true;
         } catch(err) {
             console.log('QUEUE ERROR: ', err);
-            return null;
+            return false;
         }
     }
 
     validateTransaction(txn) {
-        assert(txn.symbol);
-        assert(txn.orderId);
-        assert(txn.clientOrderId);
-        assert(txn.transactTime);
-        assert(txn.price);
-        assert(txn.origQty);
-        assert(txn.executedQty);
-        assert(txn.status);
-        assert(txn.timeInForce);
-        assert(txn.type);
-        assert(txn.side);
+        try {
+            assert(txn.symbol);
+            assert(txn.orderId);
+            assert(txn.clientOrderId);
+            assert(txn.transactTime);
+            assert(txn.price);
+            assert(txn.origQty);
+            assert(txn.executedQty);
+            assert(txn.status);
+            assert(txn.timeInForce);
+            assert(txn.type);
+            assert(txn.side);
+            return true;
+        } catch(err) {
+            return false
+        }
     }
 
     async digest() {
@@ -65,7 +71,7 @@ module.exports = class Queue {
         for (let orderId in queue) {
             try {
                 const unfilledTxn = queue[orderId];
-                const txn = await binance.getOrder({ symbol: this.config.tradingPair, orderId: unfilledTxn.orderId });
+                const txn = await binance.getOrder({ symbol: this.tradingPair, orderId: unfilledTxn.orderId });
                 if (txn.status === 'FILLED') {
                     filledTxns[txn.orderId] = txn;
                     const side = txn.side === 'BUY' ? 'PURCHASED' : 'SOLD';
