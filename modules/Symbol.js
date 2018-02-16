@@ -24,12 +24,17 @@ module.exports = class Symbol {
     }
 
     async init() {
-        const exchangeInfo = await binance.exchangeInfo();
-        exchangeInfo.symbols.forEach((symbol) => {
-            if (symbol.symbol === this.tradingPair) {
-                return this.meta = Object.assign(symbol, this.getters());
-            }
-        });
+        try {
+            const exchangeInfo = await binance.exchangeInfo();
+            exchangeInfo.symbols.forEach((symbol) => {
+                if (symbol.symbol === this.tradingPair) {
+                    this.meta = Object.assign(this.getters(), symbol);
+                }
+            });
+            return true;
+        } catch(err) {
+            return false;
+        }
     }
 
     getters() {
@@ -40,7 +45,7 @@ module.exports = class Symbol {
             get minQty() { return Number(this.filters[1].minQty) },
             get maxQty() { return Number(this.filters[1].maxQty) },
             get stepSize() { return Number(this.filters[1].stepSize) },
-            get sigFig() { return Number(this.symbol.filters[0].minPrice).indexOf('1') - 2) }
+            get sigFig() { return Number(this.filters[0].minPrice.indexOf('1') - 2) }
         }
     }
 };

@@ -26,11 +26,12 @@ module.exports = class Ledger {
     }
 
 	init() {
-        if (this.exists()) {
-            return;
-        } else {
-            fs.appendFileSync(this.file, 'date,pair,side,amount,price\n');
-        }
+		try {
+			if (!this.exists()) fs.appendFileSync(this.file, 'date,pair,side,amount,price\n');
+			return true;
+		} catch(err) {
+			return false;
+		}
 	}
 
 	write(date, pair, side, amount, price) {
