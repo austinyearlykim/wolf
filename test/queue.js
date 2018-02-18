@@ -3,19 +3,12 @@ const Queue = require('../modules/Queue.js');
 
 describe('Queue', function() {
     const tradingPair = 'ETHBTC';
-    const state = {
-        executing: true,
-        consuming: true
-    };
     let queue = null;
 
     it('should be able construct Queue', (done) => {
         (async() => {
             try {
-                const config = {
-                    tradingPair,
-                    state
-                };
+                const config = { tradingPair };
                 queue = new Queue(config);
                 assert(queue);
                 done();

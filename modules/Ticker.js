@@ -29,20 +29,21 @@ module.exports = class Ticker {
     }
 
     init() {
-        try {
-            binance.ws.partialDepth({ symbol: this.tradingPair, level: 5 }, (depth) => {
-                const temp = {
-                    bidPrice: depth.bids[0].price,
-                    askPrice: depth.bids[0].price
-                };
-                this.meta = Object.assign(this.getters(), temp);
-                this.callbacks.forEach((cb) => cb());
-            });
-            return true;
-        } catch(err) {
-            console.log('TICKER ERROR: ', err.message);
-            return false
-        }
+        return new Promise((resolve, reject) => {
+            try {
+                binance.ws.partialDepth({ symbol: this.tradingPair, level: 5 }, (depth) => {
+                    const temp = {
+                        bidPrice: depth.bids[0].price,
+                        askPrice: depth.bids[0].price
+                    };
+                    this.meta = Object.assign(this.getters(), temp);
+                    this.callbacks.forEach((cb) => cb());
+                    resolve(true);
+                });
+            } catch(err) {
+                reject(false);
+            }
+        });
     }
 
     getters() {

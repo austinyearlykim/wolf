@@ -42,7 +42,8 @@ describe('Symbol', function() {
                     assert(symbol.meta.minQty && typeof symbol.meta.minQty === 'number');
                     assert(symbol.meta.maxQty && typeof symbol.meta.maxQty === 'number');
                     assert(symbol.meta.stepSize && typeof symbol.meta.stepSize === 'number');
-                    assert(symbol.meta.sigFig && typeof symbol.meta.sigFig === 'number');
+                    assert(symbol.meta.priceSigFig && typeof symbol.meta.priceSigFig === 'number');
+                    assert(symbol.meta.quantitySigFig && typeof symbol.meta.quantitySigFig === 'number');
                     done();
                 }, 3000);
             } catch(err) {

@@ -28,7 +28,7 @@ module.exports = class Symbol {
             const exchangeInfo = await binance.exchangeInfo();
             exchangeInfo.symbols.forEach((symbol) => {
                 if (symbol.symbol === this.tradingPair) {
-                    this.meta = Object.assign(this.getters(), symbol);
+                    return this.meta = Object.assign(this.getters(), symbol);
                 }
             });
             return true;
@@ -46,7 +46,8 @@ module.exports = class Symbol {
             get minQty() { return Number(this.filters[1].minQty) },
             get maxQty() { return Number(this.filters[1].maxQty) },
             get stepSize() { return Number(this.filters[1].stepSize) },
-            get sigFig() { return Number(this.filters[0].minPrice.indexOf('1') - 2) }
+            get priceSigFig() { return Number(this.filters[0].minPrice.indexOf('1') - 1) },
+            get quantitySigFig() { return Number(this.filters[2].minNotional.indexOf('1') - 1) }
         }
     }
 };

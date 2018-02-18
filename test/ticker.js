@@ -29,7 +29,7 @@ describe('Ticker', function() {
         })();
     });
 
-    it('should be initialize Ticker', (done) => {
+    it('should be able to initialize Ticker', (done) => {
         (async() => {
             try {
                 await ticker.init();

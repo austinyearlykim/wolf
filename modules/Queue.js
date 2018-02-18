@@ -22,7 +22,6 @@ init() {
 module.exports = class Queue {
     constructor(config) {
         this.tradingPair = config.tradingPair;
-        this.state = config.state;
         this.ledger = null;
         this.meta = {
             queue: {}
@@ -31,8 +30,8 @@ module.exports = class Queue {
 
     init() {
         this.meta = Object.assign(this.getters(), this.meta);
-        const ledger = new Ledger({ filename: 'ledger' });
-        this.ledger = ledger.init();
+        this.ledger = new Ledger({ filename: 'ledger' });
+        this.ledger.init();
     }
 
     push(txn) {
@@ -79,13 +78,10 @@ module.exports = class Queue {
                     this.ledger.write(Date.now(), txn.symbol, txn.side, txn.executedQty, txn.price);
                     if (txn.side === 'SELL') {
                         await twilio.sendText(`${side} ${txn.symbol}`);
-                        this.state.executing = false;
                     }
                 }
-                return true;
             } catch(err) {
                 console.log('QUEUE ERROR: ', err.message);
-                return false;
             }
         }
         Object.keys(filledTxns).forEach((orderId) => {

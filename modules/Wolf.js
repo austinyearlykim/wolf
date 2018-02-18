@@ -12,7 +12,6 @@ module.exports = class Wolf {
         this.ticker = null; //bid/ask prices updated per tick
         this.queue = null; //queue for unfilled transactions
         this.state = {
-            executing: false,
             consuming: false
         };
         this.init();
@@ -24,30 +23,29 @@ module.exports = class Wolf {
         this.config.profitPercentage = Number(this.config.profitPercentage)/100;
 
         //get trading pair information
-        const symbol = new Symbol({ tradingPair: this.config.tradingPair });
-        this.symbol = await symbol.init();
+        this.symbol = new Symbol({ tradingPair: this.config.tradingPair });
+        await this.symbol.init();
+
+        //setup/start queue
+        this.queue = new Queue({ tradingPair: this.config.tradingPair });
+        this.queue.init();
 
         //setup/start ticker
         const tickerConfig = {
             tradingPair: this.config.tradingPair,
-            callbacks: [ this.execute, this.consume ]
+            callbacks: [
+                () => this.consume()
+            ]
         };
-        const ticker = new Ticker(tickerConfig);
-        this.ticker = ticker.init();
+        this.ticker = new Ticker(tickerConfig);
+        await this.ticker.init();
 
-        //setup/start queue
-        const queue = new Queue({
-            tradingPair: this.config.tradingPair,
-            state: this.state
-        });
-        this.queue = queue.init();
+        this.execute();
     }
 
     //execute W.O.L.F
     execute() {
-        if (this.state.executing) return;
-        this.state.executing = true;
-        console.log('Executing...');
+        console.log('Executing W.O.L.F...');
         this.purchase();
     }
 
@@ -66,11 +64,11 @@ module.exports = class Wolf {
             const txn = filledTransactions[orderId];
             const price = Number(txn.price);
             if (txn.side === 'BUY') {
-                const profit = price + (price * this.config.profitPercentage) + (price * .001));
+                const profit = price + (price * this.config.profitPercentage) + (price * .001);
                 this.sell(Number(txn.executedQty), profit);
             }
             if (txn.side === 'SELL') {
-                const profit = price - (price * this.config.profitPercentage);
+                const profit = price - (price * this.config.profitPercentage) - (price * .001);
                 this.purchase(Number(txn.executedQty), profit);
             }
         }
@@ -85,8 +83,9 @@ module.exports = class Wolf {
         const symbol = this.symbol.meta;
         const minQuantity = symbol.minQty;
         const maxQuantity = symbol.maxQty;
+        const quantitySigFig = symbol.quantitySigFig;
         const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
-        const currentPrice = this.ticker.meta.ask;
+        const currentPrice = this.ticker.meta.bid;
         const budget = this.config.budget;
 
         let quantity = minQuantity;
@@ -96,8 +95,8 @@ module.exports = class Wolf {
 
         assert(quantity >= minQuantity && quantity <= maxQuantity, 'invalid quantity');
 
-        console.log('Quantity Calculated: ', quantity.toFixed(8));
-        return quantity.toFixed(8);
+        console.log('Quantity Calculated: ', quantity.toFixed(quantitySigFig));
+        return quantity.toFixed(quantitySigFig);
     }
 
     //push an unfilled limit purchase order to the queue
@@ -105,17 +104,18 @@ module.exports = class Wolf {
         try {
             const symbol = this.symbol.meta;
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
-            const sigFig = symbol.sigFig;
+            const priceSigFig = symbol.priceSigFig;
+            const quantitySigFig = symbol.quantitySigFig;
             const unconfirmedPurchase = await binance.order({
                 symbol: this.config.tradingPair,
                 side: 'BUY',
-                quantity: (quantity && quantity.toFixed(8)) || this.calculateQuantity(),
-                price: (price && price.toFixed(sigFig)) || (this.ticker.meta.bid + tickSize).toFixed(sigFig)
+                quantity: (quantity && quantity.toFixed(quantitySigFig)) || this.calculateQuantity(),
+                price: (price && price.toFixed(priceSigFig)) || (this.ticker.meta.bid + tickSize).toFixed(priceSigFig)
             });
             this.queue.push(unconfirmedPurchase);
             console.log('Purchasing... ', unconfirmedPurchase.symbol);
         } catch(err) {
-            console.log('PURCHASE ERROR: ', err.message);
+            console.log('PURCHASE ERROR: ', err);
             return false;
         }
     }
@@ -125,12 +125,13 @@ module.exports = class Wolf {
         try {
             const symbol = this.symbol.meta;
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
-            const sigFig = symbol.sigFig;
+            const priceSigFig = symbol.priceSigFig;
+            const quantitySigFig = symbol.quantitySigFig;
             const unconfirmedSell = await binance.order({
                 symbol: this.config.tradingPair,
                 side: 'SELL',
-                quantity: quantity.toFixed(8),
-                price: profit.toFixed(sigFig)
+                quantity: quantity.toFixed(quantitySigFig),
+                price: profit.toFixed(priceSigFig)
             });
             this.queue.push(unconfirmedSell);
             console.log('Selling...', unconfirmedSell.symbol);
