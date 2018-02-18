@@ -7,8 +7,7 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 1. Create an `.env` file in your root directory.
 2. Copy and paste `template.env` into `.env`
 3. Fill out *required* environment variables
----> Sign up for Binance API here if you haven't already: https://www.binance.com/userCenter/createApi.html
-4. `npm i`
+4. `npm i && npm test`
 5. `npm start`
 
 ### Documentation
