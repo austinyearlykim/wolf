@@ -12,7 +12,8 @@ module.exports = class Wolf {
         this.ticker = null; //bid/ask prices updated per tick
         this.queue = null; //queue for unfilled transactions
         this.state = {
-            consuming: false
+            consuming: false,
+            killed: false
         };
         this.init();
     }
@@ -51,6 +52,7 @@ module.exports = class Wolf {
 
     //digest the queue of open buy/sell orders
     async consume() {
+        if (this.state.killed) return;
         if (this.state.consuming) return;
         if (!this.queue.meta.length) return;
 
@@ -137,6 +139,36 @@ module.exports = class Wolf {
             console.log('Selling...', unconfirmedSell.symbol);
         } catch(err) {
             console.log('SELL ERROR: ', err.message);
+            return false;
+        }
+    }
+
+    async kill() {
+        try {
+            this.state.killed = true;
+            const meta = this.queue.meta;
+            const queue = meta.queue;
+            const length = meta.length;
+            let counter = 0;
+
+            console.log(`Cancelling ${length} open orders created by W.O.L.F`);
+            for (let orderId in queue) {
+                const orderToCancel = queue[orderId];
+                await binance.cancelOrder({
+                    symbol: orderToCancel.symbol,
+                    orderId: orderToCancel.orderId
+                });
+                counter++;
+            }
+            console.log(`Cancelled ${counter} opened orders created by W.O.L.F`);
+
+            return true;
+        } catch(err) {
+            //disregard UNKNOWN_ORDER because the order was executed already; hakuna matata~
+            if (err.message === 'UNKNOWN_ORDER') {
+                return false;
+            }
+            console.log('KILL ERROR: ', err.message);
             return false;
         }
     }
