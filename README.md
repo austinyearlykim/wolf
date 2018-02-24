@@ -7,7 +7,7 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 1. Create an `.env` file in your root directory.
 2. Copy and paste `template.env` into `.env`
 3. Fill out *required* environment variables
-4. `npm i && npm test`
+4. `npm test`
 5. `npm start`
 
 ### Documentation
@@ -27,7 +27,7 @@ Brief technical explanation:  There are three parts to W.O.L.F.  There is a `tic
 This command runs tests before starting the bot.  It then kicks off a recursive loop of functions that keep track of best BUY/SELL prices updated by the second and executes trades that are favored for you.
 
 ##### `Ctrl + C`
-Pressing these two keys will terminate W.O.L.F.  Pay particular attention to where in the function loop W.O.L.F was terminated.  You may need to login to https://www.binance.com/userCenter/openOrders.html to close any open orders that W.O.L.F is no longer watching for you.
+Pressing these two keys will terminate W.O.L.F and cancel any open orders that W.O.L.F created.  It will not cancel any open orders you might already have.
 
 ### Logs
 ##### `Purchasing... `
