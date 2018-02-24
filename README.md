@@ -16,7 +16,7 @@ W.O.L.F calculates how much to spend *per transaction* based on your `BUDGET`.  
 
 The synchronous nature of W.O.L.F makes sure that your trades execute as fast *and* safe as possible.  And only sells when it's profitable!  Transaction fees are taken account of!  Easy peasy!
 
-Brief technical explanation:  There are three parts to W.O.L.F.  There is a `ticker`, `queue`, and `consumer`.  The `ticker` keeps track of current prices in real-time and acts a heartbeat. The `ticker` will try to execute a purchase order every tick if it's not already executing one, as well as firing off the `consumer` if it's not already consuming.  Executed trades get put into a `queue` that holds open, or unfilled, orders in memory.  The `consumer` is responsible for checking if these open orders have been filled, and if so remove them from the queue.  The `consumer` will then add back in the queue the open and unfilled, closing order.  Rinse and repeat.
+Brief technical explanation:  There are three parts to W.O.L.F.  There is a `ticker`, `queue`, and `consumer`.  The `ticker` keeps track of current prices in real-time and acts a heartbeat. The `ticker` will trigger the `consumer` as well.  Executed trades get put into a `queue` that holds open, or unfilled, orders in memory.  The `consumer` is responsible for checking if these open orders have been filled, and if so remove them from the queue.  The `consumer` will then add back in the queue the open and unfilled, closing order.  Rinse and repeat.
 
 ##### `.env`
 - `BUDGET` is the most you're willing to spend.  The unit of this number is the second half of `TRADING_PAIR`; e.g if `TRADING_PAIR`is `ETHBTC` then `BUDGET`is the amount of BTC you're willing to spend.
