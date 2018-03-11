@@ -22,6 +22,7 @@ Brief technical explanation:  There are three parts to W.O.L.F.  There is a `tic
 - `BUDGET` is the most you're willing to spend.  The unit of this number is the second half of `TRADING_PAIR`; e.g if `TRADING_PAIR`is `ETHBTC` then `BUDGET`is the amount of BTC you're willing to spend.
 - `PROFIT_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.
 - `TRADING_PAIR` must be in upper-case; e.g if `TRADING_PAIR` equals `ETHBTC` it means you're buying and selling Ethereum with Bitcoin.
+- `COMPOUND` can be set to true to have your budget programmatically increase as you profit for more profit potential.
 
 ##### `npm start`
 This command runs tests before starting the bot.  It then kicks off a recursive loop of functions that keep track of best BUY/SELL prices updated by the second and executes trades that are favored for you.
