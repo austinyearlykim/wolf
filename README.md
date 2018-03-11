@@ -10,6 +10,11 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 4. `npm test`
 5. `npm start`
 
+### Release Notes
+`v3.2.0` March 10, 2018
+- Adds release notes to README.md
+- Adds compounding budget feature
+
 ### Documentation
 ##### `How it works`
 W.O.L.F calculates how much to spend *per transaction* based on your `BUDGET`.  It watches price movements of a particular `TRADING_PAIR` in real-time and will buy at the current price and sell for a calculated `PROFIT_PERCENTAGE`.
