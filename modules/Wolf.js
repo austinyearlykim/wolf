@@ -13,16 +13,14 @@ module.exports = class Wolf {
         this.queue = null; //queue for unfilled transactions
         this.state = {
             consuming: false,
-            killed: false
+            killed: false,
+            netSpend: 0,
+            get compound() { return this.netSpend <= 0 ? 0 : this.netSpend }
         };
         this.init();
     }
 
     async init() {
-        //.env stringifies its values.  we convert these strings into numbers here so we don't have to later.
-        this.config.budget = Number(this.config.budget);
-        this.config.profitPercentage = Number(this.config.profitPercentage)/100;
-
         //get trading pair information
         this.symbol = new Symbol({ tradingPair: this.config.tradingPair });
         await this.symbol.init();
@@ -65,13 +63,16 @@ module.exports = class Wolf {
         for (let orderId in filledTransactions) {
             const txn = filledTransactions[orderId];
             const price = Number(txn.price);
-            if (txn.side === 'BUY') {
+            const side = txn.side;
+            if (side === 'BUY') {
+                this.compound(side, price);
                 const profit = price + (price * this.config.profitPercentage) + (price * .001);
                 this.sell(Number(txn.executedQty), profit);
             }
-            if (txn.side === 'SELL') {
+            if (side === 'SELL') {
+                this.compound(side, price);
                 const profit = price - (price * this.config.profitPercentage) - (price * .001);
-                this.purchase(Number(txn.executedQty), profit);
+                this.purchase(profit);
             }
         }
 
@@ -88,7 +89,7 @@ module.exports = class Wolf {
         const quantitySigFig = symbol.quantitySigFig;
         const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
         const currentPrice = this.ticker.meta.bid;
-        const budget = this.config.budget;
+        const budget = this.config.budget + this.state.compound;
 
         let quantity = minQuantity;
         while (quantity * currentPrice <= budget) quantity += stepSize;
@@ -102,7 +103,7 @@ module.exports = class Wolf {
     }
 
     //push an unfilled limit purchase order to the queue
-    async purchase(quantity, price) {
+    async purchase(price) {
         try {
             const symbol = this.symbol.meta;
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
@@ -111,7 +112,7 @@ module.exports = class Wolf {
             const unconfirmedPurchase = await binance.order({
                 symbol: this.config.tradingPair,
                 side: 'BUY',
-                quantity: (quantity && quantity.toFixed(quantitySigFig)) || this.calculateQuantity(),
+                quantity: this.calculateQuantity(),
                 price: (price && price.toFixed(priceSigFig)) || (this.ticker.meta.bid + tickSize).toFixed(priceSigFig)
             });
             this.queue.push(unconfirmedPurchase);
@@ -141,6 +142,13 @@ module.exports = class Wolf {
             console.log('SELL ERROR: ', err.message);
             return false;
         }
+    }
+
+    compound(side, price) {
+        if (!this.config.compound) return;
+        if (side === 'BUY') this.state.netSpend -= price;
+        if (side === 'SELL') this.state.netSpend += price;
+        console.log('Compounding...', this.state.netSpend);
     }
 
     async kill() {
