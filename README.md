@@ -11,6 +11,11 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 5. `npm start`
 
 ### Release Notes
+`v3.3.0` March 25, 2018
+- Adds profit lock feature
+- Adds stop loss feature
+- Adds stop limit feature
+
 `v3.2.0` March 10, 2018
 - Adds release notes to README.md
 - Adds compounding budget feature
@@ -24,10 +29,16 @@ The synchronous nature of W.O.L.F makes sure that your trades execute as fast *a
 Brief technical explanation:  There are three parts to W.O.L.F.  There is a `ticker`, `queue`, and `consumer`.  The `ticker` keeps track of current prices in real-time and acts a heartbeat. The `ticker` will trigger the `consumer` as well.  Executed trades get put into a `queue` that holds open, or unfilled, orders in memory.  The `consumer` is responsible for checking if these open orders have been filled, and if so remove them from the queue.  The `consumer` will then add back in the queue the open and unfilled, closing order.  Rinse and repeat.
 
 ##### `.env`
+###### REQUIRED
 - `BUDGET` is the most you're willing to spend.  The unit of this number is the second half of `TRADING_PAIR`; e.g if `TRADING_PAIR`is `ETHBTC` then `BUDGET`is the amount of BTC you're willing to spend.
 - `PROFIT_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.
 - `TRADING_PAIR` must be in upper-case; e.g if `TRADING_PAIR` equals `ETHBTC` it means you're buying and selling Ethereum with Bitcoin.
+###### OPTIONAL
 - `COMPOUND` can be set to true to have your budget programmatically increase as you profit for more profit potential.
+- `PROFIT_LOCK_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  
+    - Example: Your `PROFIT_PERCENTAGE` is 5% and your `PROFIT_LOCK_PERCENTAGE` is 3%.  W.O.L.F will wait for your order to sell at 5%, however if it passes 3% at anytime and then dips back to say ~2.7% it will do a market order to *lock* some of your gains.   It's important to note that your sell at your `PROFIT_LOCK_PERCENTAGE` will only trigger if the price passes your `PROFIT_LOCK_PERCENTAGE` then dips backwards, otherwise W.O.L.F will continue watching to see if you reach your, more desirable, `PROFIT_PERCENTAGE`.
+- `STOP_LOSS_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  If at any point the current market price of your position dips below this percentage, W.O.L.F will sell your position at *market price* with a *market* order.  You can either have a `STOP_LOSS_PERCENTAGE` or `STOP_LIMIT_PERCENTAGE`, but not both.
+- `STOP_LIMIT_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  If at any point the current market price of your position dips below this percentage, W.O.L.F will sell your position at *market price* with a *limit* order.  You can either have a `STOP_LIMIT_PERCENTAGE` or `STOP_LOSS_PERCENTAGE`, but not both.
 
 ##### `npm start`
 This command runs tests before starting the bot.  It then kicks off a recursive loop of functions that keep track of best BUY/SELL prices updated by the second and executes trades that are favored for you.
