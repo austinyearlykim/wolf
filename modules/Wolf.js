@@ -83,6 +83,7 @@ module.exports = class Wolf {
 
         //super-pseudo code
         //make TRIGGER(s) accessible from config
+        //currentPrice = .bid
         //iterate through watchlist without .forEach b/c async
             //watchlist[txn].price >, =, < TRIGGER(s) ?
             // const profit = price + (price * this.config.profitPercentage) + (price * .001);
