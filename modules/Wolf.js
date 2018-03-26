@@ -11,6 +11,7 @@ module.exports = class Wolf {
         this.symbol = null; //meta information about trading pair
         this.ticker = null; //bid/ask prices updated per tick
         this.queue = null; //queue for unfilled transactions
+        this.watchlist = {}; //orderId --> filledTransactions map
         this.state = {
             consuming: false,
             killed: false,
@@ -39,12 +40,12 @@ module.exports = class Wolf {
         this.ticker = new Ticker(tickerConfig);
         await this.ticker.init();
 
-        this.execute();
+        this.hunt();
     }
 
     //execute W.O.L.F
-    execute() {
-        console.log('Executing W.O.L.F...');
+    hunt() {
+        console.log('W.O.L.F is hunting...');
         this.purchase();
     }
 
@@ -59,25 +60,34 @@ module.exports = class Wolf {
 
         const filledTransactions = await this.queue.digest();
 
-        //repopulate queue with closing (unconfirmed) transactions
+        //populate watchlist with filled BUY orders and compound ALL filled orders if necessary
         for (let orderId in filledTransactions) {
             const txn = filledTransactions[orderId];
-            const price = Number(txn.price);
             const side = txn.side;
-            if (side === 'BUY') {
-                this.compound(side, price);
-                const profit = price + (price * this.config.profitPercentage) + (price * .001);
-                this.sell(Number(txn.executedQty), profit);
-            }
-            if (side === 'SELL') {
-                this.compound(side, price);
-                const profit = price - (price * this.config.profitPercentage) - (price * .001);
-                this.purchase(profit);
-            }
+            const price = Number(txn.price);
+            this.compound(side, price);
+            if (side === 'BUY') this.watchlist[orderId] = txn;
+            if (side === 'SELL') this.hunt();
         }
+
+        await this.watch();
 
         console.log('Consumed queue.', 'Orders in queue: ' + this.queue.meta.length);
         this.state.consuming = false;
+    }
+
+    //watch for any triggers i.e STOP_LIMIT_PERCENTAGE, STOP_LOSS_PERCENTAGE, PROFIT_LOCK_PERCENTAGE and repopulate queue accordingly via this.sell()
+    async watch() {
+        console.log('Watching watchlist watchfully: ', this.watchlist);
+        //TODO: ALOT.  Going to bed. Really happy with progress.  If you're reading this, you're loved and don't ever let anybody tell you otherwise. Kick ass. Life is short.
+
+        //super-pseudo code
+        //make TRIGGER(s) accessible from config
+        //currentPrice = .bid
+        //iterate through watchlist without .forEach b/c async
+            //watchlist[txn].price >, =, < TRIGGER(s) ?
+            // const profit = price + (price * this.config.profitPercentage) + (price * .001);
+            //this.sell(.qty, profit)
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
@@ -109,12 +119,13 @@ module.exports = class Wolf {
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
             const priceSigFig = symbol.priceSigFig;
             const quantitySigFig = symbol.quantitySigFig;
-            const unconfirmedPurchase = await binance.order({
+            const buyOrder = {
                 symbol: this.config.tradingPair,
                 side: 'BUY',
                 quantity: this.calculateQuantity(),
                 price: (price && price.toFixed(priceSigFig)) || (this.ticker.meta.bid + tickSize).toFixed(priceSigFig)
-            });
+            };
+            const unconfirmedPurchase = await binance.order(buyOrder);
             this.queue.push(unconfirmedPurchase);
             console.log('Purchasing... ', unconfirmedPurchase.symbol);
         } catch(err) {
@@ -130,12 +141,13 @@ module.exports = class Wolf {
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
             const priceSigFig = symbol.priceSigFig;
             const quantitySigFig = symbol.quantitySigFig;
-            const unconfirmedSell = await binance.order({
+            const sellOrder = {
                 symbol: this.config.tradingPair,
                 side: 'SELL',
                 quantity: quantity.toFixed(quantitySigFig),
                 price: profit.toFixed(priceSigFig)
-            });
+            };
+            const unconfirmedSell = await binance.order(sellOrder);
             this.queue.push(unconfirmedSell);
             console.log('Selling...', unconfirmedSell.symbol);
         } catch(err) {
