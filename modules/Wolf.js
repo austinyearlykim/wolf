@@ -11,10 +11,12 @@ module.exports = class Wolf {
         this.symbol = null; //meta information about trading pair
         this.ticker = null; //bid/ask prices updated per tick
         this.queue = null; //queue for unfilled transactions
+        this.watchlist = {}; //orderId --> filledTransactions map
         this.state = {
             consuming: false,
             killed: false,
             netSpend: 0,
+            paranoid: false,
             get compound() { return this.netSpend <= 0 ? 0 : this.netSpend }
         };
         this.init();
@@ -39,12 +41,12 @@ module.exports = class Wolf {
         this.ticker = new Ticker(tickerConfig);
         await this.ticker.init();
 
-        this.execute();
+        this.hunt();
     }
 
     //execute W.O.L.F
-    execute() {
-        console.log('Executing W.O.L.F...');
+    hunt() {
+        console.log('W.O.L.F is hunting...');
         this.purchase();
     }
 
@@ -52,32 +54,50 @@ module.exports = class Wolf {
     async consume() {
         if (this.state.killed) return;
         if (this.state.consuming) return;
-        if (!this.queue.meta.length) return;
 
         this.state.consuming = true;
         console.log('Consuming queue...', 'Orders in queue: ' + this.queue.meta.length);
 
         const filledTransactions = await this.queue.digest();
 
-        //repopulate queue with closing (unconfirmed) transactions
+        //populate watchlist with filled BUY orders and compound ALL filled orders if necessary
         for (let orderId in filledTransactions) {
             const txn = filledTransactions[orderId];
-            const price = Number(txn.price);
             const side = txn.side;
-            if (side === 'BUY') {
-                this.compound(side, price);
-                const profit = price + (price * this.config.profitPercentage) + (price * .001);
-                this.sell(Number(txn.executedQty), profit);
-            }
-            if (side === 'SELL') {
-                this.compound(side, price);
-                const profit = price - (price * this.config.profitPercentage) - (price * .001);
-                this.purchase(profit);
-            }
+            const price = Number(txn.price);
+            this.compound(side, price);
+            if (side === 'BUY') this.watchlist[orderId] = txn;
+            if (side === 'SELL') this.hunt();
         }
+
+        this.watch();
 
         console.log('Consumed queue.', 'Orders in queue: ' + this.queue.meta.length);
         this.state.consuming = false;
+    }
+
+    //watch for any triggers i.e STOP_LIMIT_PERCENTAGE, PROFIT_LOCK_PERCENTAGE, and repopulate queue accordingly via this.sell()
+    watch() {
+        const watchlist = this.watchlist;
+        console.log('Watching watchlist... Orders in watchlist: ', Object.keys(watchlist).length);
+
+        const config = this.config;
+        for (let orderId in watchlist) {
+            const order = watchlist[orderId];
+            const orderPrice = Number(order.price);
+            const orderQuantity = Number(order.executedQty);
+            const currentPrice = this.ticker.meta.bid;
+            let shouldSell = false;
+            if (currentPrice >= (orderPrice + (orderPrice * config.profitPercentage))) shouldSell = true;                                               //PROFIT_PERCENTAGE TRIGGER
+            if (this.state.paranoid && (currentPrice <= orderPrice + (orderPrice * config.profitLockPercentage))) shouldSell = true;                    //PROFIT_LOCK TRIGGER
+            if (config.profitLockPercentage && (currentPrice >= orderPrice + (orderPrice * config.profitLockPercentage))) this.state.paranoid = true;   //PROFIT_LOCK TRIGGER
+            if (config.stopLimitPercentage && (currentPrice <= orderPrice - (orderPrice * config.stopLimitPercentage))) shouldSell = true;              //STOP_LIMIT TRIGGER
+            if (shouldSell) {
+            	this.sell(orderQuantity, currentPrice);
+                this.state.paranoid = false;
+                delete watchlist[orderId];
+            }
+        }
     }
 
     //calculate quantity of coin to purchase based on given budget from .env
@@ -109,12 +129,13 @@ module.exports = class Wolf {
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
             const priceSigFig = symbol.priceSigFig;
             const quantitySigFig = symbol.quantitySigFig;
-            const unconfirmedPurchase = await binance.order({
+            const buyOrder = {
                 symbol: this.config.tradingPair,
                 side: 'BUY',
                 quantity: this.calculateQuantity(),
                 price: (price && price.toFixed(priceSigFig)) || (this.ticker.meta.bid + tickSize).toFixed(priceSigFig)
-            });
+            };
+            const unconfirmedPurchase = await binance.order(buyOrder);
             this.queue.push(unconfirmedPurchase);
             console.log('Purchasing... ', unconfirmedPurchase.symbol);
         } catch(err) {
@@ -130,12 +151,13 @@ module.exports = class Wolf {
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
             const priceSigFig = symbol.priceSigFig;
             const quantitySigFig = symbol.quantitySigFig;
-            const unconfirmedSell = await binance.order({
+            const sellOrder = {
                 symbol: this.config.tradingPair,
                 side: 'SELL',
                 quantity: quantity.toFixed(quantitySigFig),
                 price: profit.toFixed(priceSigFig)
-            });
+            };
+            const unconfirmedSell = await binance.order(sellOrder);
             this.queue.push(unconfirmedSell);
             console.log('Selling...', unconfirmedSell.symbol);
         } catch(err) {
