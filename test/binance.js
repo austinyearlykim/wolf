@@ -43,17 +43,16 @@ describe('Binance', function() {
     it('should have enough balance to afford budget', (done) => {
         (async() => {
             try {
-                const tradingPair = process.env.TRADING_PAIR;
-                const baseAsset = tradingPair.substr(tradingPair.length - 3);
+                const targetAsset = process.env.TARGET_ASSET
                 const accountInfo = await binance.accountInfo();
-                let validBaseAsset = false;
+                let validTargetAsset = false;
                 accountInfo.balances.forEach((balance) => {
-                    if (balance.asset === baseAsset) {
-                        validBaseAsset = true;
-                        return assert(Number(balance.free) >= Number(process.env.BUDGET), 'not enough ' + baseAsset + ' balance in Binance wallet to use W.O.L.F with your budget.  Balance: ' + balance.free + ' Budget: ' + process.env.BUDGET);
+                    if (balance.asset === targetAsset) {
+                        validTargetAsset = true;
+                        return assert(Number(balance.free) >= Number(process.env.BUDGET), 'not enough ' + targetAsset + ' balance in Binance wallet to use W.O.L.F with your budget.  Balance: ' + balance.free + ' Budget: ' + process.env.BUDGET);
                     }
                 });
-                assert(validBaseAsset, 'invalid trading pair, make an issue with your trading pair in github here: ' + 'https://github.com/austinyearlykim/wolf/issues');
+                assert(validTargetAsset, 'invalid trading pair, make an issue with your trading pair in github here: ' + 'https://github.com/austinyearlykim/wolf/issues');
                 assert(accountInfo, 'unable to receive balance');
                 done();
             } catch(err) {
