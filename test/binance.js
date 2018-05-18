@@ -43,7 +43,7 @@ describe('Binance', function() {
     it('should have enough balance to afford budget', (done) => {
         (async() => {
             try {
-                const targetAsset = process.env.TARGET_ASSET
+                const targetAsset = process.env.TARGET_ASSET;
                 const accountInfo = await binance.accountInfo();
                 let validTargetAsset = false;
                 accountInfo.balances.forEach((balance) => {

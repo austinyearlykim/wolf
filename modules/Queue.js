@@ -1,5 +1,4 @@
 const binance = require('./binance.js');
-const twilio = require('./twilio.js');
 const assert = require('assert');
 const Ledger = require('./Ledger.js');
 
@@ -76,9 +75,6 @@ module.exports = class Queue {
                     const side = txn.side === 'BUY' ? 'PURCHASED' : 'SOLD';
                     console.log(side + ': ' + txn.executedQty + txn.symbol + ' @ ', txn.price)
                     this.ledger.write(Date.now(), txn.symbol, txn.side, txn.executedQty, txn.price);
-                    if (txn.side === 'SELL') {
-                        await twilio.sendText(`${side} ${txn.symbol}`);
-                    }
                 }
             } catch(err) {
                 console.log('QUEUE ERROR: ', err.message);
