@@ -14,6 +14,7 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 `v3.4.0` May XX, 2018
 - Adds support for USDT.
 - `TRADING_PAIR` in `.env` is now deprecated.  Replaced by `TARGET_ASSET` and `BASE_ASSET`.
+- `TWILIO_ENABLED` and all other Twilio related variables are deprecated.  It may be back in the future. PR anybody?
 
 `v3.3.0` March 26, 2018
 - Adds profit lock feature.
