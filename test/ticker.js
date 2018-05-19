@@ -29,7 +29,8 @@ describe('Ticker', function() {
         })();
     });
 
-    it('should be able to initialize Ticker', (done) => {
+    it('should be able to initialize Ticker', function(done) {
+        this.timeout(3000);
         (async() => {
             try {
                 await ticker.init();

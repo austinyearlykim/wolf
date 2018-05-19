@@ -1,10 +1,8 @@
 require('dotenv').config();
 const Wolf = require('./modules/Wolf.js');
-const tradingPair = process.env.TRADING_PAIR;
 
 const config = {
-    tradingPair,
-    baseAsset: tradingPair.substr(tradingPair.length - 3),
+    tradingPair: process.env.TARGET_ASSET + process.env.BASE_ASSET,
     profitPercentage: Number(process.env.PROFIT_PERCENTAGE)/100,
     budget: Number(process.env.BUDGET),
     compound: process.env.COMPOUND.toLowerCase() === "true",

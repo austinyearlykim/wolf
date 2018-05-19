@@ -11,17 +11,22 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 5. `npm start`
 
 ### Release Notes
+`v3.4.0` May 19, 2018
+- Adds support for `USDT` and `BNB`.
+- `TRADING_PAIR` in `.env` is now deprecated.  Replaced by `TARGET_ASSET` and `BASE_ASSET`.
+- `TWILIO_ENABLED` and all other Twilio related variables are deprecated.  It may be back in the future. PR anybody?
+
 `v3.3.0` March 26, 2018
-- Adds profit lock feature
-- Adds stop limit feature
+- Adds profit lock feature.
+- Adds stop limit feature.
 
 `v3.2.0` March 10, 2018
-- Adds release notes to README.md
-- Adds compounding budget feature
+- Adds release notes to README.md.
+- Adds compounding budget feature.
 
 ### Documentation
 ##### `How it works`
-W.O.L.F calculates how much to spend *per transaction* based on your `BUDGET`.  It watches price movements of a particular `TRADING_PAIR` in real-time and will buy at the current price and sell for a calculated `PROFIT_PERCENTAGE`.
+W.O.L.F calculates how much to spend *per transaction* based on your `BUDGET`.  It watches price movements of a particular trading pair (`TARGET_ASSET` + `BASE_ASSET`) in real-time and will buy at the current price and sell for a calculated `PROFIT_PERCENTAGE`.
 
 The synchronous nature of W.O.L.F makes sure that your trades execute as fast *and* safe as possible.  And only sells when it's profitable!  Transaction fees are taken account of!  Easy peasy!
 
@@ -39,9 +44,10 @@ Brief technical step-by-step:
 
 ##### `.env`
 ###### REQUIRED
-- `BUDGET` is the most you're willing to spend.  The unit of this number is the second half of `TRADING_PAIR`; e.g if `TRADING_PAIR`is `ETHBTC` then `BUDGET`is the amount of BTC you're willing to spend.
+- `BUDGET` is the most you're willing to spend.  The unit of this number is your `BASE_ASSET`; e.g if your desired trading pair is `ADAETH`, then `BUDGET` is the amount of `ETH` you're willing to spend.
 - `PROFIT_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.
-- `TRADING_PAIR` must be in upper-case; e.g if `TRADING_PAIR` equals `ETHBTC` it means you're buying and selling Ethereum with Bitcoin.
+- `TARGET_ASSET` must be in upper-case; e.g if your desired trading pair is `ADAETH`. Your `TARGET_ASSET` is `ADA`.
+- `BASE_ASSET` must be in upper-case; e.g if your desired trading pair is `ADAETH`. Your `BASE_ASSET` is `ETH`.
 ###### OPTIONAL
 - `COMPOUND` can be set to true to have your budget programmatically increase as you profit for more profit potential.
 - `PROFIT_LOCK_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  
