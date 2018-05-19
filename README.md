@@ -11,8 +11,8 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 5. `npm start`
 
 ### Release Notes
-`v3.4.0` May XX, 2018
-- Adds support for USDT.
+`v3.4.0` May 19, 2018
+- Adds support for `USDT` and `BNB`.
 - `TRADING_PAIR` in `.env` is now deprecated.  Replaced by `TARGET_ASSET` and `BASE_ASSET`.
 - `TWILIO_ENABLED` and all other Twilio related variables are deprecated.  It may be back in the future. PR anybody?
 
