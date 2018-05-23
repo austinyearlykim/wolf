@@ -11,6 +11,11 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 5. `npm start`
 
 ### Release Notes
+`v3.4.1` May 22, 2018
+- Bug in Mocha test fixed.
+- Corrects `template.env`.
+- Deprecated `STOP_LOSS_PERCENTAGE` from `.env`
+
 `v3.4.0` May 19, 2018
 - Adds support for `USDT` and `BNB`.
 - `TRADING_PAIR` in `.env` is now deprecated.  Replaced by `TARGET_ASSET` and `BASE_ASSET`.
@@ -52,7 +57,7 @@ Brief technical step-by-step:
 - `COMPOUND` can be set to true to have your budget programmatically increase as you profit for more profit potential.
 - `PROFIT_LOCK_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  
     - Example: Your `PROFIT_PERCENTAGE` is 5% and your `PROFIT_LOCK_PERCENTAGE` is 3%.  W.O.L.F will wait for your order to sell at 5%, however if it passes 3% at anytime and then dips back to say ~2.7% it will do a market order to *lock* some of your gains.   It's important to note that your sell at your `PROFIT_LOCK_PERCENTAGE` will only trigger if the price passes your `PROFIT_LOCK_PERCENTAGE` then dips backwards, otherwise W.O.L.F will continue watching to see if you reach your, more desirable, `PROFIT_PERCENTAGE`.
-- `STOP_LIMIT_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  If at any point the current market price of your position dips below this percentage, W.O.L.F will sell your position at *market price* with a *limit* order.  You can either have a `STOP_LIMIT_PERCENTAGE` or `STOP_LOSS_PERCENTAGE`, but not both.
+- `STOP_LIMIT_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  If at any point the current market price of your position dips below this percentage, W.O.L.F will sell your position at *market price* with a *limit* order.
 
 ##### `npm start`
 This command runs tests before starting the bot.  It then kicks off a recursive loop of functions that keep track of best BUY/SELL prices updated by the second and executes trades that are favored for you.
@@ -84,3 +89,4 @@ Be sure to reach out to me to get listed here after you've made a donation!  No 
 
 ### Supporters
  - Chase Reid (@Chase-Reid)
+ - @BatmanPDX
