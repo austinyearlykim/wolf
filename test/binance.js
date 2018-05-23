@@ -43,13 +43,13 @@ describe('Binance', function() {
     it('should have enough balance to afford budget', (done) => {
         (async() => {
             try {
-                const targetAsset = process.env.TARGET_ASSET;
+                const baseAsset = process.env.BASE_ASSET;
                 const accountInfo = await binance.accountInfo();
                 let validTargetAsset = false;
                 accountInfo.balances.forEach((balance) => {
-                    if (balance.asset === targetAsset) {
+                    if (balance.asset === baseAsset) {
                         validTargetAsset = true;
-                        return assert(Number(balance.free) >= Number(process.env.BUDGET), 'not enough ' + targetAsset + ' balance in Binance wallet to use W.O.L.F with your budget.  Balance: ' + balance.free + ' Budget: ' + process.env.BUDGET);
+                        return assert(Number(balance.free) >= Number(process.env.BUDGET), 'not enough ' + baseAsset + ' balance in Binance wallet to use W.O.L.F with your budget.  Balance: ' + balance.free + ' Budget: ' + process.env.BUDGET);
                     }
                 });
                 assert(validTargetAsset, 'invalid trading pair, make an issue with your trading pair in github here: ' + 'https://github.com/austinyearlykim/wolf/issues');
