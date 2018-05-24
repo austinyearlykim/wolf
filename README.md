@@ -11,23 +11,26 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 5. `npm start`
 
 ### Release Notes
+`v3.4.2` May 23, 2018
+- BUGFIX: quantitySigFig() for USDT now correctly returns a non-negative number https://github.com/austinyearlykim/wolf/issues/40
+
 `v3.4.1` May 22, 2018
-- Bug in Mocha test fixed.
+- BUGFIX: mocha, available balance, test fixed. https://github.com/austinyearlykim/wolf/issues/38
 - Corrects `template.env`.
 - Deprecated `STOP_LOSS_PERCENTAGE` from `.env`
 
 `v3.4.0` May 19, 2018
-- Adds support for `USDT` and `BNB`.
+- FEATURE REQUEST: Adds support for `USDT` and `BNB`. https://github.com/austinyearlykim/wolf/issues/27
 - `TRADING_PAIR` in `.env` is now deprecated.  Replaced by `TARGET_ASSET` and `BASE_ASSET`.
 - `TWILIO_ENABLED` and all other Twilio related variables are deprecated.  It may be back in the future. PR anybody?
 
 `v3.3.0` March 26, 2018
-- Adds profit lock feature.
-- Adds stop limit feature.
+- FEATURE: adds profit lock feature.
+- FEATURE: adds stop limit feature.
 
 `v3.2.0` March 10, 2018
+- FEATURE REQUEST: compounding budget feature. https://github.com/austinyearlykim/wolf/issues/2
 - Adds release notes to README.md.
-- Adds compounding budget feature.
 
 ### Documentation
 ##### `How it works`
