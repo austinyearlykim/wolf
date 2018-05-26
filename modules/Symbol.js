@@ -46,10 +46,10 @@ module.exports = class Symbol {
             get minQty() { return Number(this.filters[1].minQty) },
             get maxQty() { return Number(this.filters[1].maxQty) },
             get stepSize() { return Number(this.filters[1].stepSize) },
-            get priceSigFig() { return Number(this.filters[0].minPrice.indexOf('1') - 1) },
+            get priceSigFig() { return Number(this.filters[0].tickSize.indexOf('1') - 1) },
             get quantitySigFig() {
-                const sf = Number(this.filters[2].minNotional.indexOf('1') - 1);
-                return sf >= 0 ? sf : 0; 
+                const sf = Number(this.filters[1].stepSize.indexOf('1') - 1)
+                return sf >= 0 ? sf : 0;
             }
         }
     }
