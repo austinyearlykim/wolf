@@ -2,6 +2,7 @@ require('dotenv').config();
 const assert = require('assert');
 
 before(function(done) {
+    process.env.NODE_ENV = 'dev';
     //validate binance
     assert(process.env.BINANCE_API_KEY, 'missing BINANCE_API_KEY from .env');
     assert(process.env.BINANCE_API_SECRET, 'missing BINANCE_API_SECRET from .env');
@@ -22,10 +23,11 @@ before(function(done) {
     assert(validBaseAssets.some((b, i) => {
         return  process.env.BASE_ASSET === validBaseAssets[i];
     }), 'invalid BASE_ASSET in .env');
-    
+
     done();
 });
 
 after(function(done) {
+    process.env.NODE_ENV === 'prod';
     done();
 });

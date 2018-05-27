@@ -108,7 +108,7 @@ module.exports = class Wolf {
         const maxQuantity = symbol.maxQty;
         const quantitySigFig = symbol.quantitySigFig;
         const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
-        const currentPrice = this.ticker.meta.bid;
+        const currentPrice = this.ticker.meta.ask;
         const budget = this.config.budget + this.state.compound;
 
         let quantity = minQuantity;
@@ -133,7 +133,7 @@ module.exports = class Wolf {
                 symbol: this.config.tradingPair,
                 side: 'BUY',
                 quantity: this.calculateQuantity(),
-                price: (price && price.toFixed(priceSigFig)) || (this.ticker.meta.bid + tickSize).toFixed(priceSigFig)
+                price: (price && price.toFixed(priceSigFig)) || (this.ticker.meta.ask + tickSize).toFixed(priceSigFig)
             };
             const unconfirmedPurchase = await binance.order(buyOrder);
             this.queue.push(unconfirmedPurchase);

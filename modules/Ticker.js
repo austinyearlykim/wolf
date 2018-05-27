@@ -26,6 +26,10 @@ module.exports = class Ticker {
         this.tradingPair = config.tradingPair;
         this.callbacks = config.callbacks;
         this.meta = {};
+        this.godMode = {
+            bid: false,
+            ask: false
+        };
     }
 
     init() {
@@ -33,8 +37,8 @@ module.exports = class Ticker {
             try {
                 binance.ws.partialDepth({ symbol: this.tradingPair, level: 5 }, (depth) => {
                     const temp = {
-                        bidPrice: depth.bids[0].price,
-                        askPrice: depth.bids[0].price
+                        bidPrice: this.godMode.bid || depth.bids[0].price,
+                        askPrice: this.godMode.ask || depth.asks[0].price
                     };
                     this.meta = Object.assign(this.getters(), temp);
                     this.callbacks.forEach((cb) => cb());

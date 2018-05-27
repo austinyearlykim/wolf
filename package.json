@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --recursive --exit",
-    "start": "npm test && node ."
+    "start": "node .",
+    "simulator": "mocha simulator.js --exit"
   },
   "author": "",
   "license": "ISC",
