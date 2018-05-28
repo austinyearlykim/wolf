@@ -22,7 +22,7 @@ before(function(done) {
     assert(validBaseAssets.some((b, i) => {
         return  process.env.BASE_ASSET === validBaseAssets[i];
     }), 'invalid BASE_ASSET in .env');
-    
+
     done();
 });
 

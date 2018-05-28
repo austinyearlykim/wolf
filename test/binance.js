@@ -10,7 +10,7 @@ describe('Binance', function() {
                 assert(ping, 'unable to ping Binance');
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });
@@ -23,7 +23,7 @@ describe('Binance', function() {
                 assert(accountInfo, 'unable to receieve balance');
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });
@@ -35,7 +35,7 @@ describe('Binance', function() {
                 assert(accountInfo.canTrade, 'not authorized to trade on Binance');
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });
@@ -56,7 +56,7 @@ describe('Binance', function() {
                 assert(accountInfo, 'unable to receive balance');
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });

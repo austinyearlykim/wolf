@@ -17,6 +17,8 @@ module.exports = class Wolf {
             killed: false,
             netSpend: 0,
             paranoid: false,
+            profitLockPercentageMet: false, //used for mocha testing
+            stopLimitPercentageMet: false,
             get compound() { return this.netSpend <= 0 ? 0 : this.netSpend }
         };
         this.init();
@@ -52,10 +54,11 @@ module.exports = class Wolf {
 
     //digest the queue of open buy/sell orders
     async consume() {
-        if (this.state.killed) return;
-        if (this.state.consuming) return;
+        const state = this.state;
+        if (state.killed) return;
+        if (state.consuming) return;
 
-        this.state.consuming = true;
+        state.consuming = true;
         console.log('Consuming queue...', 'Orders in queue: ' + this.queue.meta.length);
 
         const filledTransactions = await this.queue.digest();
@@ -67,13 +70,13 @@ module.exports = class Wolf {
             const price = Number(txn.price);
             this.compound(side, price);
             if (side === 'BUY') this.watchlist[orderId] = txn;
-            if (side === 'SELL') this.hunt();
+            if (!state.stopLimitPercentageMet && side === 'SELL') this.hunt();
         }
 
         this.watch();
 
         console.log('Consumed queue.', 'Orders in queue: ' + this.queue.meta.length);
-        this.state.consuming = false;
+        state.consuming = false;
     }
 
     //watch for any triggers i.e STOP_LIMIT_PERCENTAGE, PROFIT_LOCK_PERCENTAGE, and repopulate queue accordingly via this.sell()
@@ -82,19 +85,31 @@ module.exports = class Wolf {
         console.log('Watching watchlist... Orders in watchlist: ', Object.keys(watchlist).length);
 
         const config = this.config;
+        const state = this.state;
         for (let orderId in watchlist) {
             const order = watchlist[orderId];
             const orderPrice = Number(order.price);
             const orderQuantity = Number(order.executedQty);
             const currentPrice = this.ticker.meta.bid;
             let shouldSell = false;
-            if (currentPrice >= (orderPrice + (orderPrice * config.profitPercentage))) shouldSell = true;                                               //PROFIT_PERCENTAGE TRIGGER
-            if (this.state.paranoid && (currentPrice <= orderPrice + (orderPrice * config.profitLockPercentage))) shouldSell = true;                    //PROFIT_LOCK TRIGGER
-            if (config.profitLockPercentage && (currentPrice >= orderPrice + (orderPrice * config.profitLockPercentage))) this.state.paranoid = true;   //PROFIT_LOCK TRIGGER
-            if (config.stopLimitPercentage && (currentPrice <= orderPrice - (orderPrice * config.stopLimitPercentage))) shouldSell = true;              //STOP_LIMIT TRIGGER
+            if (currentPrice >= (orderPrice + (orderPrice * config.profitPercentage))) shouldSell = true;                         //PROFIT_PERCENTAGE TRIGGER
+            if (state.paranoid && (currentPrice <= orderPrice + (orderPrice * config.profitLockPercentage))) {                    //PROFIT_LOCK TRIGGER
+                console.log('Current price has dipped below PROFIT_LOCK_PERCENTAGE while in paranoid mode. Exiting position.');
+                state.profitLockPercentageMet = true;  //used for mocha testing
+                shouldSell = true;
+            }
+            if (config.profitLockPercentage && (currentPrice >= orderPrice + (orderPrice * config.profitLockPercentage))) {       //PROFIT_LOCK TRIGGER
+                console.log('PROFIT_LOCK_PERCENTAGE REACHED. Now in paranoid mode.')
+                state.paranoid = true;
+            }
+            if (config.stopLimitPercentage && (currentPrice <= orderPrice - (orderPrice * config.stopLimitPercentage))) {         //STOP_LIMIT TRIGGER
+                console.log('STOP_LIMIT_PERCENTAGE REACHED. Exiting position.');
+                state.stopLimitPercentageMet = true;
+                shouldSell = true;
+            }
             if (shouldSell) {
             	this.sell(orderQuantity, currentPrice);
-                this.state.paranoid = false;
+                state.paranoid = false;
                 delete watchlist[orderId];
             }
         }
@@ -108,7 +123,7 @@ module.exports = class Wolf {
         const maxQuantity = symbol.maxQty;
         const quantitySigFig = symbol.quantitySigFig;
         const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
-        const currentPrice = this.ticker.meta.bid;
+        const currentPrice = this.ticker.meta.ask;
         const budget = this.config.budget + this.state.compound;
 
         let quantity = minQuantity;
@@ -133,7 +148,7 @@ module.exports = class Wolf {
                 symbol: this.config.tradingPair,
                 side: 'BUY',
                 quantity: this.calculateQuantity(),
-                price: (price && price.toFixed(priceSigFig)) || (this.ticker.meta.bid + tickSize).toFixed(priceSigFig)
+                price: (price && price.toFixed(priceSigFig)) || (this.ticker.meta.ask).toFixed(priceSigFig)
             };
             const unconfirmedPurchase = await binance.order(buyOrder);
             this.queue.push(unconfirmedPurchase);

@@ -1,11 +1,12 @@
 {
   "name": "wolf",
-  "version": "3.4.2",
+  "version": "3.5.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "mocha --recursive --exit",
-    "start": "npm test && node ."
+    "start": "node .",
+    "simulator": "mocha simulator.js --exit"
   },
   "author": "",
   "license": "ISC",

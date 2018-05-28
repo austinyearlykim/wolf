@@ -13,7 +13,7 @@ describe('Queue', function() {
                 assert(queue);
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });
@@ -24,7 +24,7 @@ describe('Queue', function() {
                 await queue.init();
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });
@@ -36,7 +36,7 @@ describe('Queue', function() {
                 assert(typeof queue.meta.length === 'number');
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });
@@ -60,7 +60,7 @@ describe('Queue', function() {
                 assert(queue.validateTransaction(transaction));
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });
@@ -84,7 +84,7 @@ describe('Queue', function() {
                 assert.equal(queue.validateTransaction(invalidTransaction), false);
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });
@@ -109,7 +109,7 @@ describe('Queue', function() {
                 assert(queue.meta.length === 1);
                 done();
             } catch(err) {
-                return console.log(err.message);
+                throw new Error(err);
             }
         })();
     });

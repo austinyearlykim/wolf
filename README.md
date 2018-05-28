@@ -8,9 +8,16 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 2. Copy and paste `template.env` into `.env`
 3. Fill out *required* environment variables
 4. `npm test`
-5. `npm start`
+5. (Optional) `npm run simulator`
+6. `npm start`
 
 ### Release Notes
+`v3.5.0` May 27, 2018
+- FEATURE: full integration test suite! `npm run simulation`.  Feel free to run it as many times as you like, it will only mimic orders, and never create a real one.
+
+- BUGFIX: stop limit now properly triggers. https://github.com/austinyearlykim/wolf/issues/41
+- BUGFIX: quantitySigFig() now properly checks against correct references from binanace websocket. https://github.com/austinyearlykim/wolf/issues/50
+
 `v3.4.2` May 23, 2018
 - BUGFIX: quantitySigFig() for USDT now correctly returns a non-negative number https://github.com/austinyearlykim/wolf/issues/40
 
