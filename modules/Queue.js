@@ -23,7 +23,9 @@ module.exports = class Queue {
         this.tradingPair = config.tradingPair;
         this.ledger = null;
         this.meta = {
-            queue: {}
+            queue: {},
+            buyCount: 0,
+            sellCount: 0
         };
     }
 
@@ -64,7 +66,8 @@ module.exports = class Queue {
     }
 
     async digest() {
-        const queue = this.meta.queue;
+        const meta = this.meta;
+        const queue = meta.queue;
         const filledTxns = {};
         for (let orderId in queue) {
             try {
@@ -73,7 +76,12 @@ module.exports = class Queue {
                 if (txn.status === 'FILLED') {
                     filledTxns[txn.orderId] = txn;
                     const side = txn.side === 'BUY' ? 'PURCHASED' : 'SOLD';
-                    console.log(side + ': ' + txn.executedQty + txn.symbol + ' @ ', txn.price)
+                    if (side === 'PURCHASED') {
+                        meta.buyCount += 1;
+                    } else {
+                        meta.sellCount += 1;
+                    }
+                    console.log(side + ': ' + txn.executedQty + ' ' + txn.symbol + ' @ ', txn.price)
                     this.ledger.write(Date.now(), txn.symbol, txn.side, txn.executedQty, txn.price);
                 }
             } catch(err) {

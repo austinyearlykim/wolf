@@ -22,6 +22,14 @@ const Wolf = require('./modules/Wolf.js');
 let wolf = {};
 let order = {};
 let getOrder = {};
+const config = {
+    tradingPair: 'ADAETH',
+    profitPercentage: Number('9')/100,
+    budget: Number('.015'),
+    compound: 'true',
+    profitLockPercentage: Number('5')/100,
+    stopLimitPercentage: Number('10')/100
+};
 
 function timeout(ms) {
     return new Promise((resolve, reject) => {
@@ -86,42 +94,67 @@ after(function(done) {
 
 it('should be able start wolf', function(done) {
     this.timeout(10000000);
-    const config = {
-        tradingPair: process.env.TARGET_ASSET + process.env.BASE_ASSET,
-        profitPercentage: Number(process.env.PROFIT_PERCENTAGE)/100,
-        budget: Number(process.env.BUDGET),
-        compound: process.env.COMPOUND.toLowerCase() === "true",
-        profitLockPercentage: Number(process.env.PROFIT_LOCK_PERCENTAGE),
-        stopLimitPercentage: Number(process.env.STOP_LIMIT_PERCENTAGE)
-    };
-    wolf = new Wolf(config);
-    done();
+    (async() => {
+        try {
+            wolf = new Wolf(config);
+            await timeout(5000);
+            done();
+        } catch(err) {
+            throw new Error(err);
+        }
+    })();
 });
 
-it('should be able to execute buys and sells', function(done) {
+it('should be able to execute buys and sells on an uptrend', function(done) {
+    this.timeout(10000000);
+    (async() => {
+        try {
+            await timeout(8000);
+            wolf.ticker.godMode.ask = wolf.ticker.godMode.bid;
+            wolf.ticker.godMode.bid = Number(wolf.ticker.godMode.ask) + (Number(wolf.ticker.godMode.ask) * Number(config.profitPercentage));
+            await timeout(8000);
+            wolf.ticker.godMode.ask = wolf.ticker.godMode.bid;
+            wolf.ticker.godMode.bid = Number(wolf.ticker.godMode.ask) + (Number(wolf.ticker.godMode.ask) * Number(config.profitPercentage));
+            await timeout(8000);
+            wolf.ticker.godMode.ask = wolf.ticker.godMode.bid;
+            wolf.ticker.godMode.bid = Number(wolf.ticker.godMode.ask) + (Number(wolf.ticker.godMode.ask) * Number(config.profitPercentage));
+            await timeout(10000);
+            assert(Number(wolf.queue.meta.buyCount) >= 2);
+            assert(Number(wolf.queue.meta.sellCount) >= 2);
+            done();
+        } catch(err) {
+            return console.log(err);
+        }
+    })();
+});
+
+it('should be able to execute sell when PROFIT_LOCK_PERCENTAGE is met', function(done) {
+    this.timeout(10000000);
+    (async() => {
+        try {
+            wolf.ticker.godMode.bid = Number(wolf.ticker.godMode.ask) + (Number(wolf.ticker.godMode.ask) * Number(config.profitPercentage));
+            await timeout(8000);
+            wolf.ticker.godMode.bid = Number(wolf.ticker.godMode.bid) - (Number(wolf.ticker.godMode.bid) * Number(config.profitLockPercentage))
+            await timeout(8000);
+            assert(wolf.state.profitLockPercentageMet);
+            done();
+        } catch(err) {
+            return console.log(err);
+        }
+    })();
+});
+
+it('should be able to create sell order when STOP_LIMIT_PERCENTAGE is met', function(done) {
     this.timeout(10000000);
     (async() => {
         try {
             await timeout(5000);
-            wolf.ticker.godMode.bid = '0.00033900';
-            await timeout(3000);
-            wolf.ticker.godMode.bid = '0.00035000';
-            await timeout(3000);
-            wolf.ticker.godMode.bid = '0.00037000';
-            await timeout(3000);
-            wolf.ticker.godMode.bid = '0.00038000';
-            await timeout(3000);
-            wolf.ticker.godMode.bid = '0.00039000';
-            await timeout(3000);
-            wolf.ticker.godMode.bid = '0.00040000';
-            await timeout(3000)
-            wolf.ticker.godMode.bid = '0.00050000';
-            await timeout(3000);
-            wolf.ticker.godMode.bid = '0.00020000';
-            await timeout(5000);
+            wolf.ticker.godMode.bid = '0.00000100';
+            await timeout(8000);
+            assert(wolf.state.stopLimitPercentageMet);
             done();
         } catch(err) {
-            return console.log(err.message);
+            throw new Error(err);
         }
     })();
 });

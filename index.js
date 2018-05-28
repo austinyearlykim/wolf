@@ -6,8 +6,8 @@ const config = {
     profitPercentage: Number(process.env.PROFIT_PERCENTAGE)/100,
     budget: Number(process.env.BUDGET),
     compound: process.env.COMPOUND.toLowerCase() === "true",
-    profitLockPercentage: Number(process.env.PROFIT_LOCK_PERCENTAGE),
-    stopLimitPercentage: Number(process.env.STOP_LIMIT_PERCENTAGE)
+    profitLockPercentage: Number(process.env.PROFIT_LOCK_PERCENTAGE)/100,
+    stopLimitPercentage: Number(process.env.STOP_LIMIT_PERCENTAGE)/100
 };
 const wolf = new Wolf(config);
 
