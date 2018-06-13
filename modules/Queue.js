@@ -21,6 +21,7 @@ init() {
 module.exports = class Queue {
     constructor(config) {
         this.tradingPair = config.tradingPair;
+        this.logger = config.logger;
         this.ledger = null;
         this.meta = {
             queue: {},
@@ -81,7 +82,7 @@ module.exports = class Queue {
                     } else {
                         meta.sellCount += 1;
                     }
-                    console.log(side + ': ' + txn.executedQty + ' ' + txn.symbol + ' @ ', txn.price)
+                    this.logger.success(side + ': ' + txn.executedQty + ' ' + txn.symbol + ' @ ' + txn.price)
                     this.ledger.write(Date.now(), txn.symbol, txn.side, txn.executedQty, txn.price);
                 }
             } catch(err) {

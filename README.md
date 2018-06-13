@@ -12,6 +12,10 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 6. `npm start`
 
 ### Release Notes
+`v3.6.0` June 12, 2018
+- FEATURE REQUEST: Better terminal logging that doesn't make you want to throw up. https://github.com/austinyearlykim/wolf/issues/32
+- README.md updates
+
 `v3.5.0` May 27, 2018
 - FEATURE: full integration test suite! `npm run simulation`.  Feel free to run it as many times as you like, it will only mimic orders, and never create a real one.
 
@@ -76,6 +80,9 @@ This command runs tests before starting the bot.  It then kicks off a recursive 
 Pressing these two keys will terminate W.O.L.F and cancel any open orders that W.O.L.F created.  It will not cancel any open orders you might already have.
 
 ### Logs
+##### `Queue: SOME_NUMBER, Watchlist: SOME_OTHER_NUMBER`
+`SOME_NUMBER` && `SOME_OTHER_NUMBER` are the number of items in the Queue and Watchlist respectfully.
+
 ##### `Purchasing... `
 Limit Buy Order was PLACED.
 

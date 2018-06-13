@@ -58,7 +58,7 @@ before(function(done) {
         return new Promise((resolve, reject) => {
             setTimeout(() => {
                 resolve(order);
-            }, 3000);
+            }, 1000);
         });
     };
     binance.getOrder = function(params) {
@@ -81,7 +81,7 @@ before(function(done) {
         return new Promise((resolve, reject) => {
             setTimeout(() => {
                 resolve(getOrder);
-            }, 2000);
+            }, 1000);
         });
     };
     done();
