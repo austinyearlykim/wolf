@@ -2,6 +2,7 @@ const binance = require('./binance.js');
 const Symbol = require('./Symbol.js');
 const Ticker = require('./Ticker.js');
 const Queue = require('./Queue.js');
+const Watchlist = require('./Watchlist.js');
 const Logger = require('./Logger.js');
 const fs = require('fs');
 const assert = require('assert');
@@ -13,7 +14,7 @@ module.exports = class Wolf {
         this.symbol = null; //meta information about trading pair
         this.ticker = null; //bid/ask prices updated per tick
         this.queue = null; //queue for unfilled transactions
-        this.watchlist = { length: 0 }; //orderId --> filledTransactions map; as well as length
+        this.watchlist = null; //orderId --> filledTransactions map; as well as length
         this.logger = null; //terminal logging system w/ dank emojis
         this.state = {
             consuming: false,
@@ -40,7 +41,7 @@ module.exports = class Wolf {
         this.queue = new Queue({ tradingPair: this.config.tradingPair, logger: this.logger });
         this.queue.init();
 
-        //setup/start ticker
+        //setup ticker
         const tickerConfig = {
             tradingPair: this.config.tradingPair,
             callbacks: [
@@ -48,7 +49,22 @@ module.exports = class Wolf {
             ]
         };
         this.ticker = new Ticker(tickerConfig);
+
+        //setup/start watchlist
+        const watchlistConfig = {
+            config: this.config,
+            state: this.state,
+            ticker: this.ticker,
+            logger: this.logger,
+            wolf: this
+        };
+        this.watchlist = new Watchlist(watchlistConfig);
+
+        //start ticker
         await this.ticker.init();
+
+        //start watchlist
+        this.watchlist.init();
 
         this.hunt();
     }
@@ -66,7 +82,7 @@ module.exports = class Wolf {
         if (state.consuming) return;
 
         state.consuming = true;
-        logger.status({ queueCount: this.queue.meta.length, watchCount: this.watchlist.length });
+        logger.status({ queueCount: this.queue.meta.length, watchCount: this.watchlist.meta.length });
         const filledTransactions = await this.queue.digest();
 
         //populate watchlist with filled BUY orders and compound ALL filled orders if necessary
@@ -75,51 +91,14 @@ module.exports = class Wolf {
             const side = txn.side;
             const price = Number(txn.price);
             this.compound(side, price);
-            if (side === 'BUY') this.watchlist[orderId] = txn;
+            if (side === 'BUY') this.watchlist.add(orderId, txn);
+            logger.status({ queueCount: this.queue.meta.length,  watchCount: this.watchlist.meta.length });
             if (!state.stopLimitPercentageMet && side === 'SELL') this.hunt();
         }
 
-        this.watch();
+        this.watchlist.watch();
 
-        logger.status({ queueCount: this.queue.meta.length,  watchCount: this.watchlist.length });
         state.consuming = false;
-    }
-
-    //watch for any triggers i.e STOP_LIMIT_PERCENTAGE, PROFIT_LOCK_PERCENTAGE, and repopulate queue accordingly via this.sell()
-    watch() {
-        const watchlist = this.watchlist;
-        this.watchlist.length = Object.keys(watchlist).length - 1;
-        this.logger.status({ queueCount: this.queue.meta.length, watchCount: this.watchlist.length });
-
-        const config = this.config;
-        const state = this.state;
-        for (let orderId in watchlist) {
-            const order = watchlist[orderId];
-            const orderPrice = Number(order.price);
-            const orderQuantity = Number(order.executedQty);
-            const currentPrice = this.ticker.meta.bid;
-            let shouldSell = false;
-            if (currentPrice >= (orderPrice + (orderPrice * config.profitPercentage))) shouldSell = true;                         //PROFIT_PERCENTAGE TRIGGER
-            if (state.paranoid && (currentPrice <= orderPrice + (orderPrice * config.profitLockPercentage))) {                    //PROFIT_LOCK TRIGGER
-                console.log(' [ALARM]::: Price dipped below PROFIT_LOCK_PERCENTAGE while in paranoid mode. Selling.');
-                state.profitLockPercentageMet = true;  //used for mocha testing
-                shouldSell = true;
-            }
-            if (config.profitLockPercentage && (currentPrice >= orderPrice + (orderPrice * config.profitLockPercentage))) {       //PROFIT_LOCK TRIGGER
-                console.log(' [ALARM]::: PROFIT_LOCK_PERCENTAGE REACHED. Now in paranoid mode.')
-                state.paranoid = true;
-            }
-            if (config.stopLimitPercentage && (currentPrice <= orderPrice - (orderPrice * config.stopLimitPercentage))) {         //STOP_LIMIT TRIGGER
-                console.log(' [ALARM]::: STOP_LIMIT_PERCENTAGE REACHED. Exiting position.');
-                state.stopLimitPercentageMet = true;
-                shouldSell = true;
-            }
-            if (shouldSell) {
-            	this.sell(orderQuantity, currentPrice);
-                state.paranoid = false;
-                delete watchlist[orderId];
-            }
-        }
     }
 
     //calculate quantity of coin to purchase based on given budget from .env

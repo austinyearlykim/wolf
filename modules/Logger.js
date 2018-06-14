@@ -30,7 +30,7 @@ module.exports = class Logger {
 
     status(stats) {
         try {
-            const newStats = 'Queue: ' + Number(stats.queueCount) + ' Watchlist: ' + Number(stats.watchCount);
+            const newStats = 'Queue: ' + (Number(stats.queueCount) || 0) + ' Watchlist: ' + (Number(stats.watchCount) || 0);
             this.stats = newStats;
             this.logger.text = newStats;
         } catch(err) {
