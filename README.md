@@ -12,6 +12,9 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 6. `npm start`
 
 ### Release Notes
+`v3.6.1` June 13, 2018
+- Refactored watchlist
+
 `v3.6.0` June 12, 2018
 - FEATURE REQUEST: Better terminal logging that doesn't make you want to throw up. https://github.com/austinyearlykim/wolf/issues/32
 - README.md updates
