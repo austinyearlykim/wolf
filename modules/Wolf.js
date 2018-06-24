@@ -71,7 +71,10 @@ module.exports = class Wolf {
 
     //execute W.O.L.F
     hunt() {
-        this.purchase();
+        const config = this.config;
+        const currentPrice = this.ticker.meta.ask;
+        const price = config.buyLimitPercentage ? (currentPrice - (currentPrice * config.buyLimitPercentage)) : currentPrice;
+        this.purchase(price);
     }
 
     //digest the queue of open buy/sell orders
@@ -105,17 +108,19 @@ module.exports = class Wolf {
     calculateQuantity() {
         const logger = this.logger;
         logger.success('Calculating quantity... ');
+        const config = this.config;
         const symbol = this.symbol.meta;
         const minQuantity = symbol.minQty;
         const maxQuantity = symbol.maxQty;
         const quantitySigFig = symbol.quantitySigFig;
         const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
         const currentPrice = this.ticker.meta.ask;
-        const budget = this.config.budget + this.state.compound;
+        const price = config.buyLimitPercentage ? (currentPrice - (currentPrice * config.buyLimitPercentage)) : currentPrice;
+        const budget = config.budget + this.state.compound;
 
         let quantity = minQuantity;
-        while (quantity * currentPrice <= budget) quantity += stepSize;
-        if (quantity * currentPrice > budget) quantity -= stepSize;
+        while (quantity * price <= budget) quantity += stepSize;
+        if (quantity * price > budget) quantity -= stepSize;
         if (quantity === 0) quantity = minQuantity;
 
         assert(quantity >= minQuantity && quantity <= maxQuantity, 'invalid quantity');
