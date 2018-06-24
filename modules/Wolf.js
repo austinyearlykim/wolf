@@ -86,17 +86,31 @@ module.exports = class Wolf {
         if (state.killed) return;
         if (state.consuming) return;
 
+        state.consuming = true;
+
         if (config.buyLimitReset) {
             const currentTime = Date.now();
             if (currentTime - this.timer >= (config.buyLimitReset * 60000)) {
-                //cancel order
-                //purchase order
+                logger.success('Buy limit reset time reached.  Cancelling current order(s)');
+                for (let orderId in queue) {
+                    logger.success('Cancelling current buy limit order...');
+                    const orderToCancel = queue[orderId];
+                    await binance.cancelOrder({
+                        symbol: orderToCancel.symbol,
+                        orderId: orderToCancel.orderId
+                    });
+                    logger.success('Cancelled current buy limit order.');
+                };
+                logger.success('Resetting timer...');
                 this.timer = Date.now();
+                logger.success('Timer reset.');
+                logger.success('Putting in new limit buy order at better price...');
+                state.consuming = false;
+                this.hunt();
                 return;
             };
         };
 
-        state.consuming = true;
         logger.status({ queueCount: this.queue.meta.length, watchCount: this.watchlist.meta.length });
         const filledTransactions = await this.queue.digest();
 
