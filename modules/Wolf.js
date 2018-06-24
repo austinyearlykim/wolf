@@ -16,6 +16,7 @@ module.exports = class Wolf {
         this.queue = null; //queue for unfilled transactions
         this.watchlist = null; //orderId --> filledTransactions map; as well as length
         this.logger = null; //terminal logging system w/ dank emojis
+        this.timer = Date.now(); //used for BUY_LIMIT_RESET trigger
         this.state = {
             consuming: false,
             killed: false,
@@ -79,10 +80,21 @@ module.exports = class Wolf {
 
     //digest the queue of open buy/sell orders
     async consume() {
+        const config = this.config;
         const state = this.state;
         const logger = this.logger;
         if (state.killed) return;
         if (state.consuming) return;
+
+        if (config.buyLimitReset) {
+            const currentTime = Date.now();
+            if (currentTime - this.timer >= (config.buyLimitReset * 60000)) {
+                //cancel order
+                //purchase order
+                this.timer = Date.now();
+                return;
+            };
+        };
 
         state.consuming = true;
         logger.status({ queueCount: this.queue.meta.length, watchCount: this.watchlist.meta.length });

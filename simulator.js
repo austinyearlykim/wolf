@@ -29,8 +29,8 @@ const config = {
     compound: 'true',
     profitLockPercentage: Number('5')/100,
     stopLimitPercentage: Number('10')/100,
-    buyLimitPercentage: Number(1)/100,
-    buyLimitReset: Number(1) //one minute
+    buyLimitPercentage: Number('1')/100,
+    buyLimitReset: Number('1') //one minute
 };
 
 function timeout(ms) {
