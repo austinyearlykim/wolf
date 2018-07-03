@@ -83,6 +83,7 @@ module.exports = class Wolf {
         const config = this.config;
         const state = this.state;
         const logger = this.logger;
+        const queue = this.queue.meta.queue;
         if (state.killed) return;
         if (state.consuming) return;
 
