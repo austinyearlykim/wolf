@@ -185,10 +185,12 @@ module.exports = class Wolf {
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
             const priceSigFig = symbol.priceSigFig;
             const quantitySigFig = symbol.quantitySigFig;
+            const roundQuantity = Math.floor(quantity).toFixed(quantitySigFig);
+            if (roundQuantity === '0') throw new Error('You do not have enough of ' + this.config.tradingPair + ' to sell.');
             const sellOrder = {
                 symbol: this.config.tradingPair,
                 side: 'SELL',
-                quantity: quantity.toFixed(quantitySigFig),
+                quantity: roundQuantity,
                 price: profit.toFixed(priceSigFig)
             };
             const unconfirmedSell = await binance.order(sellOrder);
@@ -196,7 +198,8 @@ module.exports = class Wolf {
             this.logger.success('Selling...' + unconfirmedSell.symbol);
         } catch(err) {
             console.log('SELL ERROR: ', err.message);
-            return false;
+            console.log('PLEASE MANUALLY GO TO https://www.binance.com AND CLOSE OUT YOUR TRADE.');
+            process.exit(0);
         }
     }
 

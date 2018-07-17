@@ -44,6 +44,7 @@ module.exports = class Watchlist {
             const order = watchlist[orderId];
             const orderPrice = Number(order.price);
             const orderQuantity = Number(order.executedQty);
+
             const currentPrice = this.ticker.meta.bid;
             let shouldSell = false;
             if (currentPrice >= (orderPrice + (orderPrice * config.profitPercentage))) shouldSell = true;                         //profit percentage trigger
@@ -62,7 +63,7 @@ module.exports = class Watchlist {
                 shouldSell = true;
             }
             if (shouldSell) {
-              	this.wolf.sell(orderQuantity, currentPrice);
+              	this.wolf.sell((orderQuantity - (orderQuantity * .001)), currentPrice);
                 state.paranoid = false;
                 this.remove(orderId);
             }
