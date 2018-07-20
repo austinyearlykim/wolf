@@ -16,6 +16,7 @@ module.exports = class Wolf {
         this.queue = null; //queue for unfilled transactions
         this.watchlist = null; //orderId --> filledTransactions map; as well as length
         this.logger = null; //terminal logging system w/ dank emojis
+        this.timer = Date.now(); //used for BUY_LIMIT_RESET trigger
         this.state = {
             consuming: false,
             killed: false,
@@ -71,17 +72,47 @@ module.exports = class Wolf {
 
     //execute W.O.L.F
     hunt() {
-        this.purchase();
+        const config = this.config;
+        const currentPrice = this.ticker.meta.ask;
+        const price = config.buyLimitPercentage ? (currentPrice - (currentPrice * config.buyLimitPercentage)) : currentPrice;
+        this.purchase(price);
     }
 
     //digest the queue of open buy/sell orders
     async consume() {
+        const config = this.config;
         const state = this.state;
         const logger = this.logger;
+        const queue = this.queue.meta.queue;
         if (state.killed) return;
         if (state.consuming) return;
 
         state.consuming = true;
+
+        if (config.buyLimitReset) {
+            const currentTime = Date.now();
+            if (currentTime - this.timer >= (config.buyLimitReset * 60000)) {
+                logger.success('Buy limit reset time reached.  Cancelling current order(s)');
+                for (let orderId in queue) {
+                    logger.success('Cancelling current buy limit order...');
+                    const orderToCancel = queue[orderId];
+                    await binance.cancelOrder({
+                        symbol: orderToCancel.symbol,
+                        orderId: orderToCancel.orderId
+                    });
+                    this.queue.remove(orderToCancel.orderId);
+                    logger.success('Cancelled current buy limit order.');
+                };
+                logger.success('Resetting timer...');
+                this.timer = Date.now();
+                logger.success('Timer reset.');
+                logger.success('Putting in new limit buy order at better price...');
+                state.consuming = false;
+                this.hunt();
+                return;
+            };
+        };
+
         logger.status({ queueCount: this.queue.meta.length, watchCount: this.watchlist.meta.length });
         const filledTransactions = await this.queue.digest();
 
@@ -105,17 +136,19 @@ module.exports = class Wolf {
     calculateQuantity() {
         const logger = this.logger;
         logger.success('Calculating quantity... ');
+        const config = this.config;
         const symbol = this.symbol.meta;
         const minQuantity = symbol.minQty;
         const maxQuantity = symbol.maxQty;
         const quantitySigFig = symbol.quantitySigFig;
         const stepSize = symbol.stepSize;  //minimum quantity difference you can trade by
         const currentPrice = this.ticker.meta.ask;
-        const budget = this.config.budget + this.state.compound;
+        const price = config.buyLimitPercentage ? (currentPrice - (currentPrice * config.buyLimitPercentage)) : currentPrice;
+        const budget = config.budget + this.state.compound;
 
         let quantity = minQuantity;
-        while (quantity * currentPrice <= budget) quantity += stepSize;
-        if (quantity * currentPrice > budget) quantity -= stepSize;
+        while (quantity * price <= budget) quantity += stepSize;
+        if (quantity * price > budget) quantity -= stepSize;
         if (quantity === 0) quantity = minQuantity;
 
         assert(quantity >= minQuantity && quantity <= maxQuantity, 'invalid quantity');
@@ -153,10 +186,12 @@ module.exports = class Wolf {
             const tickSize = symbol.tickSize;  //minimum price difference you can trade by
             const priceSigFig = symbol.priceSigFig;
             const quantitySigFig = symbol.quantitySigFig;
+            const roundQuantity = Math.floor(quantity).toFixed(quantitySigFig);
+            if (roundQuantity === '0') throw new Error('You do not have enough of ' + this.config.tradingPair + ' to sell.');
             const sellOrder = {
                 symbol: this.config.tradingPair,
                 side: 'SELL',
-                quantity: quantity.toFixed(quantitySigFig),
+                quantity: roundQuantity,
                 price: profit.toFixed(priceSigFig)
             };
             const unconfirmedSell = await binance.order(sellOrder);
@@ -164,7 +199,8 @@ module.exports = class Wolf {
             this.logger.success('Selling...' + unconfirmedSell.symbol);
         } catch(err) {
             console.log('SELL ERROR: ', err.message);
-            return false;
+            console.log('PLEASE MANUALLY GO TO https://www.binance.com AND CLOSE OUT YOUR TRADE.');
+            process.exit(0);
         }
     }
 

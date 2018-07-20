@@ -12,6 +12,9 @@ IT IS NOT MY RESPONSIBILITY IF YOU GAIN/LOSE MONEY.  THERE IS NO SUCH THING AS P
 6. `npm start`
 
 ### Release Notes
+`v3.7.0` June 23, 2018
+- FEATURE REQUEST: Buy limit feature. https://github.com/austinyearlykim/wolf/issues/64
+
 `v3.6.1` June 13, 2018
 - Refactored watchlist
 
@@ -75,6 +78,8 @@ Brief technical step-by-step:
 - `PROFIT_LOCK_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  
     - Example: Your `PROFIT_PERCENTAGE` is 5% and your `PROFIT_LOCK_PERCENTAGE` is 3%.  W.O.L.F will wait for your order to sell at 5%, however if it passes 3% at anytime and then dips back to say ~2.7% it will do a market order to *lock* some of your gains.   It's important to note that your sell at your `PROFIT_LOCK_PERCENTAGE` will only trigger if the price passes your `PROFIT_LOCK_PERCENTAGE` then dips backwards, otherwise W.O.L.F will continue watching to see if you reach your, more desirable, `PROFIT_PERCENTAGE`.
 - `STOP_LIMIT_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  If at any point the current market price of your position dips below this percentage, W.O.L.F will sell your position at *market price* with a *limit* order.
+- `BUY_LIMIT_PERCENTAGE` is in whole numbers; e.g `1.2` is one-point-two percent.  W.O.L.F by default will purchase your order at the current ask price.  Providing a `BUY_LIMIT_PERCENTAGE` tells W.O.L.F to buy at the provided percentage lower than the current ask price.  This will make trades less frequent so providing a `BUY_LIMIT_RESET` is recommended, but not required.
+- `BUY_LIMIT_RESET` is in whole numbers; e.g `30` is thirty minutes.  If a buy order is unfilled for X amount of seconds W.O.L.F will cancel the order and attempt to buy in again at the `BUY_LIMIT_PERCENTAGE`.
 
 ##### `npm start`
 This command runs tests before starting the bot.  It then kicks off a recursive loop of functions that keep track of best BUY/SELL prices updated by the second and executes trades that are favored for you.
