@@ -100,6 +100,7 @@ module.exports = class Wolf {
                         symbol: orderToCancel.symbol,
                         orderId: orderToCancel.orderId
                     });
+                    this.queue.remove(orderToCancel.orderId);
                     logger.success('Cancelled current buy limit order.');
                 };
                 logger.success('Resetting timer...');

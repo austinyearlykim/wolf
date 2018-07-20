@@ -47,6 +47,12 @@ module.exports = class Queue {
         }
     }
 
+    remove(orderId) {
+        const meta = this.meta;
+        const queue = meta.queue;
+        delete queue[orderId];
+    }
+
     validateTransaction(txn) {
         try {
             assert(txn.symbol);
@@ -90,7 +96,7 @@ module.exports = class Queue {
             }
         }
         Object.keys(filledTxns).forEach((orderId) => {
-            if (queue[orderId]) delete queue[orderId];
+            if (queue[orderId]) this.remove(orderId);
         });
         return filledTxns;
     }
