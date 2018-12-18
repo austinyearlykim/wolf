@@ -36,14 +36,14 @@ describe('Symbol', function() {
             try {
                 setTimeout(() => {
                     assert(symbol.meta);
-                    assert(symbol.meta.minPrice && typeof symbol.meta.minPrice === 'number');
-                    assert(symbol.meta.maxPrice && typeof symbol.meta.maxPrice === 'number');
-                    assert(symbol.meta.tickSize && typeof symbol.meta.tickSize === 'number');
-                    assert(symbol.meta.minQty && typeof symbol.meta.minQty === 'number');
-                    assert(symbol.meta.maxQty && typeof symbol.meta.maxQty === 'number');
-                    assert(symbol.meta.stepSize && typeof symbol.meta.stepSize === 'number');
-                    assert(symbol.meta.priceSigFig && typeof symbol.meta.priceSigFig === 'number');
-                    assert(symbol.meta.quantitySigFig && typeof symbol.meta.quantitySigFig === 'number');
+                    assert(typeof symbol.meta.minPrice === 'number');
+                    assert(typeof symbol.meta.maxPrice === 'number');
+                    assert(typeof symbol.meta.tickSize === 'number');
+                    assert(typeof symbol.meta.minQty === 'number');
+                    assert(typeof symbol.meta.maxQty === 'number');
+                    assert(typeof symbol.meta.stepSize === 'number');
+                    assert(typeof symbol.meta.priceSigFig === 'number');
+                    assert(typeof symbol.meta.quantitySigFig === 'number');
                     done();
                 }, 3000);
             } catch(err) {
